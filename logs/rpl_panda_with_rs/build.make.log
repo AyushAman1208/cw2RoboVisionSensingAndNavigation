@@ -1,0 +1,8 @@
+[35m[1mScanning dependencies of target rpl_panda_with_rs[0m
+[ 25%] [32mBuilding CXX object CMakeFiles/rpl_panda_with_rs.dir/src/pcl_node/pcl_node.cpp.o[0m
+[ 50%] [32m[1mLinking CXX shared library /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/rpl_panda_with_rs/lib/librpl_panda_with_rs.so[0m
+[ 50%] Built target rpl_panda_with_rs
+[35m[1mScanning dependencies of target pcl_node[0m
+[ 75%] [32mBuilding CXX object CMakeFiles/pcl_node.dir/src/pcl_node/pcl_node.cpp.o[0m
+[100%] [32m[1mLinking CXX executable /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/rpl_panda_with_rs/lib/rpl_panda_with_rs/pcl_node[0m
+[100%] Built target pcl_node

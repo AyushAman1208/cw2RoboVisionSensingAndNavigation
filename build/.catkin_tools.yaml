@@ -1,0 +1,6 @@
+devel_space: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel
+install: false
+install_space: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/install
+profile: default
+source_space: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src
+workspace: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation

@@ -1,0 +1,5 @@
+Symlinking /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/lib/librpl_panda_with_rs.so
+Symlinking /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/lib/rpl_panda_with_rs/pcl_node
+Symlinking /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/lib/pkgconfig/rpl_panda_with_rs.pc
+Symlinking /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/share/rpl_panda_with_rs/cmake/rpl_panda_with_rsConfig.cmake
+Symlinking /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/share/rpl_panda_with_rs/cmake/rpl_panda_with_rsConfig-version.cmake

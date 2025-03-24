@@ -1,0 +1,8 @@
+prefix=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/rpl_panda_with_rs
+
+Name: rpl_panda_with_rs
+Description: Description of rpl_panda_with_rs
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

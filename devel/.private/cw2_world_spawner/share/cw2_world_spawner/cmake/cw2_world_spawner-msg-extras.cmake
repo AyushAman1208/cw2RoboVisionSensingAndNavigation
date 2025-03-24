@@ -1,0 +1,2 @@
+set(cw2_world_spawner_MESSAGE_FILES "")
+set(cw2_world_spawner_SERVICE_FILES "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_world_spawner/srv/TaskSetup.srv;/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_world_spawner/srv/Task1Service.srv;/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_world_spawner/srv/Task2Service.srv;/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_world_spawner/srv/Task3Service.srv")
