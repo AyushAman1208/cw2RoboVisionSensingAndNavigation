@@ -4,6 +4,9 @@ and starting from scratch. The only requirment is to make sure your entire
 solution is contained within the cw2_team_<your_team_number> package */
 
 #include <cw2_class.h> // change to your team name here!
+#include <task1.h>
+#include <task2.h>
+#include <task3.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +36,7 @@ cw2::t1_callback(cw2_world_spawner::Task1Service::Request &request,
   /* function which should solve task 1 */
 
   ROS_INFO("The coursework solving callback for task 1 has been triggered");
+  return task1::solve(request, response);
 
   return true;
 }
@@ -46,6 +50,7 @@ cw2::t2_callback(cw2_world_spawner::Task2Service::Request &request,
   /* function which should solve task 2 */
 
   ROS_INFO("The coursework solving callback for task 2 has been triggered");
+  return task2::solve(request, response);
 
   return true;
 }
@@ -59,6 +64,7 @@ cw2::t3_callback(cw2_world_spawner::Task3Service::Request &request,
   /* function which should solve task 3 */
 
   ROS_INFO("The coursework solving callback for task 3 has been triggered");
+  return task3::solve(request, response);
 
   return true;
 }

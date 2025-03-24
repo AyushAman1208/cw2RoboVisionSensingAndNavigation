@@ -11,6 +11,9 @@ CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documen
 CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_world_spawner/include/cw2_world_spawner/Task3ServiceRequest.h
 CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_world_spawner/include/cw2_world_spawner/Task3ServiceResponse.h
 CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/cw2_class.h
+CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task1.h
+CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task2.h
+CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task3.h
 CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp
 CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /opt/ros/noetic/include/geometry_msgs/Point.h
 CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o: /opt/ros/noetic/include/geometry_msgs/PointStamped.h

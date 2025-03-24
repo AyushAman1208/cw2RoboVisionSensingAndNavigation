@@ -1,7 +1,11 @@
 file(REMOVE_RECURSE
   "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node"
   "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node.pdb"
+  "CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o"
   "CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.o"
+  "CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o"
+  "CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o"
+  "CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o"
 )
 
 # Per-language clean rules from dependency scanning.

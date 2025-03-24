@@ -1967,6 +1967,7 @@ src/cw2_class.o: src/cw2_class.cpp.o
 
 # target to build an object file
 src/cw2_class.cpp.o:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o
 	$(MAKE) -f CMakeFiles/cw2_team_x_cw2_class_lib.dir/build.make CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o
 .PHONY : src/cw2_class.cpp.o
 
@@ -1976,6 +1977,7 @@ src/cw2_class.i: src/cw2_class.cpp.i
 
 # target to preprocess a source file
 src/cw2_class.cpp.i:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.i
 	$(MAKE) -f CMakeFiles/cw2_team_x_cw2_class_lib.dir/build.make CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.i
 .PHONY : src/cw2_class.cpp.i
 
@@ -1985,6 +1987,7 @@ src/cw2_class.s: src/cw2_class.cpp.s
 
 # target to generate assembly for a file
 src/cw2_class.cpp.s:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.s
 	$(MAKE) -f CMakeFiles/cw2_team_x_cw2_class_lib.dir/build.make CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.s
 .PHONY : src/cw2_class.cpp.s
 
@@ -2014,6 +2017,87 @@ src/cw2_node.s: src/cw2_node.cpp.s
 src/cw2_node.cpp.s:
 	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.s
 .PHONY : src/cw2_node.cpp.s
+
+src/task1.o: src/task1.cpp.o
+
+.PHONY : src/task1.o
+
+# target to build an object file
+src/task1.cpp.o:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o
+.PHONY : src/task1.cpp.o
+
+src/task1.i: src/task1.cpp.i
+
+.PHONY : src/task1.i
+
+# target to preprocess a source file
+src/task1.cpp.i:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task1.cpp.i
+.PHONY : src/task1.cpp.i
+
+src/task1.s: src/task1.cpp.s
+
+.PHONY : src/task1.s
+
+# target to generate assembly for a file
+src/task1.cpp.s:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task1.cpp.s
+.PHONY : src/task1.cpp.s
+
+src/task2.o: src/task2.cpp.o
+
+.PHONY : src/task2.o
+
+# target to build an object file
+src/task2.cpp.o:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o
+.PHONY : src/task2.cpp.o
+
+src/task2.i: src/task2.cpp.i
+
+.PHONY : src/task2.i
+
+# target to preprocess a source file
+src/task2.cpp.i:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task2.cpp.i
+.PHONY : src/task2.cpp.i
+
+src/task2.s: src/task2.cpp.s
+
+.PHONY : src/task2.s
+
+# target to generate assembly for a file
+src/task2.cpp.s:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task2.cpp.s
+.PHONY : src/task2.cpp.s
+
+src/task3.o: src/task3.cpp.o
+
+.PHONY : src/task3.o
+
+# target to build an object file
+src/task3.cpp.o:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o
+.PHONY : src/task3.cpp.o
+
+src/task3.i: src/task3.cpp.i
+
+.PHONY : src/task3.i
+
+# target to preprocess a source file
+src/task3.cpp.i:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task3.cpp.i
+.PHONY : src/task3.cpp.i
+
+src/task3.s: src/task3.cpp.s
+
+.PHONY : src/task3.s
+
+# target to generate assembly for a file
+src/task3.cpp.s:
+	$(MAKE) -f CMakeFiles/cw2_solution_node.dir/build.make CMakeFiles/cw2_solution_node.dir/src/task3.cpp.s
+.PHONY : src/task3.cpp.s
 
 # Help Target
 help:
@@ -2172,6 +2256,15 @@ help:
 	@echo "... src/cw2_node.o"
 	@echo "... src/cw2_node.i"
 	@echo "... src/cw2_node.s"
+	@echo "... src/task1.o"
+	@echo "... src/task1.i"
+	@echo "... src/task1.s"
+	@echo "... src/task2.o"
+	@echo "... src/task2.i"
+	@echo "... src/task2.s"
+	@echo "... src/task3.o"
+	@echo "... src/task3.i"
+	@echo "... src/task3.s"
 .PHONY : help
 
 

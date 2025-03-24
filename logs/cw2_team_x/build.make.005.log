@@ -1,0 +1,141 @@
+[  0%] Built target _cw2_team_x_generate_messages_check_deps_example
+[  0%] Built target geometry_msgs_generate_messages_eus
+[  0%] Built target std_msgs_generate_messages_eus
+[  0%] Built target std_msgs_generate_messages_py
+[  0%] Built target geometry_msgs_generate_messages_py
+[  0%] Built target visualization_msgs_generate_messages_py
+[  0%] Built target cw2_world_spawner_generate_messages_py
+[  0%] Built target sensor_msgs_generate_messages_cpp
+[  0%] Built target dynamic_reconfigure_generate_messages_nodejs
+[  0%] Built target tf2_msgs_generate_messages_py
+[  0%] Built target bond_generate_messages_cpp
+[  0%] Built target moveit_msgs_generate_messages_nodejs
+[  0%] Built target dynamic_reconfigure_generate_messages_lisp
+[  0%] Built target tf2_msgs_generate_messages_cpp
+[  0%] Built target geometry_msgs_generate_messages_nodejs
+[  0%] Built target dynamic_reconfigure_generate_messages_cpp
+[  0%] Built target shape_msgs_generate_messages_lisp
+[  0%] Built target trajectory_msgs_generate_messages_lisp
+[  0%] Built target topic_tools_generate_messages_cpp
+[  0%] Built target geometry_msgs_generate_messages_lisp
+[  0%] Built target std_msgs_generate_messages_lisp
+[  0%] Built target actionlib_msgs_generate_messages_lisp
+[  0%] Built target actionlib_msgs_generate_messages_nodejs
+[  0%] Built target tf_generate_messages_py
+[  0%] Built target dynamic_reconfigure_generate_messages_eus
+[  0%] Built target actionlib_generate_messages_py
+[  0%] Built target rosgraph_msgs_generate_messages_eus
+[  0%] Built target moveit_ros_planning_gencfg
+[  0%] Built target actionlib_generate_messages_nodejs
+[  0%] Built target std_srvs_generate_messages_py
+[  0%] Built target rosgraph_msgs_generate_messages_cpp
+[  0%] Built target trajectory_msgs_generate_messages_py
+[  0%] Built target roscpp_generate_messages_nodejs
+[  0%] Built target shape_msgs_generate_messages_eus
+[  0%] Built target moveit_msgs_generate_messages_py
+[  0%] Built target geometry_msgs_generate_messages_cpp
+[  0%] Built target visualization_msgs_generate_messages_lisp
+[  0%] Built target roscpp_generate_messages_eus
+[  0%] Built target roscpp_generate_messages_cpp
+[  0%] Built target moveit_msgs_generate_messages_eus
+[  0%] Built target shape_msgs_generate_messages_nodejs
+[  0%] Built target visualization_msgs_generate_messages_nodejs
+[  0%] Built target rosgraph_msgs_generate_messages_py
+[  0%] Built target cw2_world_spawner_generate_messages_lisp
+[  0%] Built target dynamic_reconfigure_generate_messages_py
+[  0%] Built target rosgraph_msgs_generate_messages_lisp
+[  0%] Built target visualization_msgs_generate_messages_cpp
+[  0%] Built target tf_generate_messages_eus
+[  0%] Built target trajectory_msgs_generate_messages_eus
+[  0%] Built target std_srvs_generate_messages_cpp
+[  0%] Built target sensor_msgs_generate_messages_eus
+[  0%] Built target shape_msgs_generate_messages_cpp
+[  0%] Built target moveit_ros_manipulation_gencfg
+[  0%] Built target actionlib_generate_messages_lisp
+[  0%] Built target std_msgs_generate_messages_nodejs
+[  0%] Built target moveit_msgs_generate_messages_lisp
+[  0%] Built target actionlib_msgs_generate_messages_py
+[  0%] Built target actionlib_generate_messages_cpp
+[  0%] Built target rosgraph_msgs_generate_messages_nodejs
+[  0%] Built target std_msgs_generate_messages_cpp
+[  0%] Built target nodelet_generate_messages_lisp
+[  0%] Built target actionlib_msgs_generate_messages_cpp
+[  0%] Built target roscpp_generate_messages_py
+[  0%] Built target sensor_msgs_generate_messages_nodejs
+[  0%] Built target sensor_msgs_generate_messages_py
+[  0%] Built target trajectory_msgs_generate_messages_cpp
+[  0%] Built target trajectory_msgs_generate_messages_nodejs
+[  0%] Built target object_recognition_msgs_generate_messages_cpp
+[  0%] Built target visualization_msgs_generate_messages_eus
+[  0%] Built target octomap_msgs_generate_messages_eus
+[  0%] Built target object_recognition_msgs_generate_messages_eus
+[  0%] Built target nodelet_topic_tools_gencfg
+[  0%] Built target object_recognition_msgs_generate_messages_lisp
+[  0%] Built target actionlib_msgs_generate_messages_eus
+[  0%] Built target object_recognition_msgs_generate_messages_nodejs
+[  0%] Built target octomap_msgs_generate_messages_cpp
+[  0%] Built target octomap_msgs_generate_messages_lisp
+[  0%] Built target actionlib_generate_messages_eus
+[  0%] Built target octomap_msgs_generate_messages_nodejs
+[  0%] Built target bond_generate_messages_nodejs
+[  0%] Built target octomap_msgs_generate_messages_py
+[  0%] Built target tf2_msgs_generate_messages_lisp
+[  0%] Built target tf_generate_messages_cpp
+[  0%] Built target tf_generate_messages_lisp
+[  0%] Built target shape_msgs_generate_messages_py
+[  0%] Built target topic_tools_generate_messages_py
+[  0%] Built target tf_generate_messages_nodejs
+[  0%] Built target std_srvs_generate_messages_eus
+[  0%] Built target roscpp_generate_messages_lisp
+[  0%] Built target std_srvs_generate_messages_lisp
+[  0%] Built target std_srvs_generate_messages_nodejs
+[  0%] Built target nodelet_generate_messages_py
+[  0%] Built target pcl_ros_gencfg
+[  0%] Built target sensor_msgs_generate_messages_lisp
+[  0%] Built target tf2_msgs_generate_messages_nodejs
+[  0%] Built target nodelet_generate_messages_cpp
+[  0%] Built target nodelet_generate_messages_eus
+[  0%] Built target object_recognition_msgs_generate_messages_py
+[  0%] Built target nodelet_generate_messages_nodejs
+[  0%] Built target bond_generate_messages_eus
+[  0%] Built target bond_generate_messages_lisp
+[  0%] Built target bond_generate_messages_py
+[  0%] Built target dynamic_reconfigure_gencfg
+[  0%] Built target pcl_msgs_generate_messages_cpp
+[  0%] Built target pcl_msgs_generate_messages_eus
+[  0%] Built target pcl_msgs_generate_messages_lisp
+[  0%] Built target pcl_msgs_generate_messages_nodejs
+[  0%] Built target moveit_msgs_generate_messages_cpp
+[  0%] Built target pcl_msgs_generate_messages_py
+[  0%] Built target topic_tools_generate_messages_eus
+[  0%] Built target topic_tools_generate_messages_nodejs
+[  6%] Built target cw2_team_x_generate_messages_cpp
+[  6%] Built target topic_tools_generate_messages_lisp
+[  6%] Built target cw2_world_spawner_generate_messages_cpp
+[  6%] Built target tf2_msgs_generate_messages_eus
+[  6%] Built target cw2_world_spawner_generate_messages_eus
+[  6%] Built target cw2_world_spawner_generate_messages_nodejs
+[ 20%] Built target cw2_team_x_generate_messages_eus
+[ 33%] Built target cw2_team_x_generate_messages_py
+[ 40%] Built target cw2_team_x_generate_messages_lisp
+[ 46%] Built target cw2_team_x_generate_messages_nodejs
+[ 53%] [32mBuilding CXX object CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o[0m
+[01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp:[m[K In member function ‘[01m[Kbool cw2::t2_callback(cw2_world_spawner::Task2Service::Request&, cw2_world_spawner::Task2Service::Response&)[m[K’:
+[01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp:53:23:[m[K [01;31m[Kerror: [m[Kinvalid initialization of reference of type ‘[01m[Kconst Request&[m[K’ {aka ‘[01m[Kconst cw2_world_spawner::Task1ServiceRequest_<std::allocator<void> >&[m[K’} from expression of type ‘[01m[Kcw2_world_spawner::Task2Service::Request[m[K’ {aka ‘[01m[Kcw2_world_spawner::Task2ServiceRequest_<std::allocator<void> >[m[K’}
+   53 |   return task2::solve([01;31m[Krequest[m[K, response);
+      |                       [01;31m[K^~~~~~~[m[K
+In file included from [01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp:8[m[K:
+[01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task2.h:6:62:[m[K [01;36m[Knote: [m[Kin passing argument 1 of ‘[01m[Kbool task2::solve(const Request&, cw2_world_spawner::Task1Service::Response&)[m[K’
+    6 |   bool solve([01;36m[Kconst cw2_world_spawner::Task1Service::Request &req[m[K,
+      |              [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~[m[K
+[01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp:[m[K In member function ‘[01m[Kbool cw2::t3_callback(cw2_world_spawner::Task3Service::Request&, cw2_world_spawner::Task3Service::Response&)[m[K’:
+[01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp:67:23:[m[K [01;31m[Kerror: [m[Kinvalid initialization of reference of type ‘[01m[Kconst Request&[m[K’ {aka ‘[01m[Kconst cw2_world_spawner::Task1ServiceRequest_<std::allocator<void> >&[m[K’} from expression of type ‘[01m[Kcw2_world_spawner::Task3Service::Request[m[K’ {aka ‘[01m[Kcw2_world_spawner::Task3ServiceRequest_<std::allocator<void> >[m[K’}
+   67 |   return task3::solve([01;31m[Krequest[m[K, response);
+      |                       [01;31m[K^~~~~~~[m[K
+In file included from [01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp:9[m[K:
+[01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task3.h:6:62:[m[K [01;36m[Knote: [m[Kin passing argument 1 of ‘[01m[Kbool task3::solve(const Request&, cw2_world_spawner::Task1Service::Response&)[m[K’
+    6 |   bool solve([01;36m[Kconst cw2_world_spawner::Task1Service::Request &req[m[K,
+      |              [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~[m[K
+make[2]: *** [CMakeFiles/cw2_team_x_cw2_class_lib.dir/build.make:63: CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:536: CMakeFiles/cw2_team_x_cw2_class_lib.dir/all] Error 2
+make: *** [Makefile:141: all] Error 2

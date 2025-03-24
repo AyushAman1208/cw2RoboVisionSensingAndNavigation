@@ -4,7 +4,11 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp" "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o"
   "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_node.cpp" "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.o"
+  "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task1.cpp" "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o"
+  "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task2.cpp" "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o"
+  "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task3.cpp" "/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

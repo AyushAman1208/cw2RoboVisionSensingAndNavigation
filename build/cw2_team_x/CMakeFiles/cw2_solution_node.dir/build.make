@@ -70,14 +70,74 @@ CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_node.cpp -o CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.s
 
+CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o: CMakeFiles/cw2_solution_node.dir/flags.make
+CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o -c /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp
+
+CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp > CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.i
+
+CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp -o CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.s
+
+CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o: CMakeFiles/cw2_solution_node.dir/flags.make
+CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task1.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o -c /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task1.cpp
+
+CMakeFiles/cw2_solution_node.dir/src/task1.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/cw2_solution_node.dir/src/task1.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task1.cpp > CMakeFiles/cw2_solution_node.dir/src/task1.cpp.i
+
+CMakeFiles/cw2_solution_node.dir/src/task1.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/cw2_solution_node.dir/src/task1.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task1.cpp -o CMakeFiles/cw2_solution_node.dir/src/task1.cpp.s
+
+CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o: CMakeFiles/cw2_solution_node.dir/flags.make
+CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task2.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o -c /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task2.cpp
+
+CMakeFiles/cw2_solution_node.dir/src/task2.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/cw2_solution_node.dir/src/task2.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task2.cpp > CMakeFiles/cw2_solution_node.dir/src/task2.cpp.i
+
+CMakeFiles/cw2_solution_node.dir/src/task2.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/cw2_solution_node.dir/src/task2.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task2.cpp -o CMakeFiles/cw2_solution_node.dir/src/task2.cpp.s
+
+CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o: CMakeFiles/cw2_solution_node.dir/flags.make
+CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task3.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o -c /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task3.cpp
+
+CMakeFiles/cw2_solution_node.dir/src/task3.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/cw2_solution_node.dir/src/task3.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task3.cpp > CMakeFiles/cw2_solution_node.dir/src/task3.cpp.i
+
+CMakeFiles/cw2_solution_node.dir/src/task3.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/cw2_solution_node.dir/src/task3.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/task3.cpp -o CMakeFiles/cw2_solution_node.dir/src/task3.cpp.s
+
 # Object files for target cw2_solution_node
 cw2_solution_node_OBJECTS = \
-"CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.o"
+"CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.o" \
+"CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o" \
+"CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o" \
+"CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o" \
+"CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o"
 
 # External object files for target cw2_solution_node
 cw2_solution_node_EXTERNAL_OBJECTS =
 
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: CMakeFiles/cw2_solution_node.dir/src/cw2_node.cpp.o
+/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: CMakeFiles/cw2_solution_node.dir/src/cw2_class.cpp.o
+/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: CMakeFiles/cw2_solution_node.dir/src/task1.cpp.o
+/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: CMakeFiles/cw2_solution_node.dir/src/task2.cpp.o
+/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: CMakeFiles/cw2_solution_node.dir/src/task3.cpp.o
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: CMakeFiles/cw2_solution_node.dir/build.make
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: /opt/ros/noetic/lib/libmoveit_common_planning_interface_objects.so
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: /opt/ros/noetic/lib/libmoveit_planning_scene_interface.so
@@ -265,7 +325,7 @@ cw2_solution_node_EXTERNAL_OBJECTS =
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: /usr/lib/x86_64-linux-gnu/libconsole_bridge.so.0.4
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/libcw2_team_x_cw2_class_lib.so
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node: CMakeFiles/cw2_solution_node.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/build/cw2_team_x/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/lib/cw2_team_x/cw2_solution_node"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/cw2_solution_node.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

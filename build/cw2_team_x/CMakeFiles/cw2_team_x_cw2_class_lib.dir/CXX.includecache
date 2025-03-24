@@ -144,8 +144,26 @@ cw2_world_spawner/Task2Service.h
 cw2_world_spawner/Task3Service.h
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/cw2_world_spawner/Task3Service.h
 
+/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task1.h
+cw2_world_spawner/Task1Service.h
+-
+
+/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task2.h
+cw2_world_spawner/Task2Service.h
+-
+
+/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/task3.h
+cw2_world_spawner/Task3Service.h
+-
+
 /home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp
 cw2_class.h
+-
+task1.h
+-
+task2.h
+-
+task3.h
 -
 
 /opt/ros/noetic/include/geometry_msgs/Point.h
