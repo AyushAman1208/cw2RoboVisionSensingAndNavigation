@@ -1,8 +1,0 @@
-prefix=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x
-
-Name: cw2_team_x
-Description: Description of cw2_team_x
-Version: 0.0.0
-Cflags: -I/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/include
-Libs: -L${prefix}/lib 
-Requires: message_runtime cw2_world_spawner

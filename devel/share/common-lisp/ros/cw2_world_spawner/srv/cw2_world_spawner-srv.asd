@@ -1,1 +1,0 @@
-/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_world_spawner/share/common-lisp/ros/cw2_world_spawner/srv/cw2_world_spawner-srv.asd

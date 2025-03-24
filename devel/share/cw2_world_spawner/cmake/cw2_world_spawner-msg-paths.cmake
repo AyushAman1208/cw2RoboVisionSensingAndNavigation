@@ -1,1 +1,0 @@
-/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_world_spawner/share/cw2_world_spawner/cmake/cw2_world_spawner-msg-paths.cmake

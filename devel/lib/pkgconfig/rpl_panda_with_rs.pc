@@ -1,1 +1,0 @@
-/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/rpl_panda_with_rs/lib/pkgconfig/rpl_panda_with_rs.pc

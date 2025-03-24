@@ -1,7 +1,0 @@
-[01m[K/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/src/cw2_class.cpp:7:10:[m[K [01;31m[Kfatal error: [m[Kcw2_class/task1.h: No such file or directory
-    7 | #include [01;31m[K<cw2_class/task1.h>[m[K
-      |          [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
-compilation terminated.
-make[2]: *** [CMakeFiles/cw2_team_x_cw2_class_lib.dir/build.make:63: CMakeFiles/cw2_team_x_cw2_class_lib.dir/src/cw2_class.cpp.o] Error 1
-make[1]: *** [CMakeFiles/Makefile2:536: CMakeFiles/cw2_team_x_cw2_class_lib.dir/all] Error 2
-make: *** [Makefile:141: all] Error 2

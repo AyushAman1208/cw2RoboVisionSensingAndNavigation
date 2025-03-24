@@ -1,8 +1,0 @@
-prefix=/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/panda_description
-
-Name: panda_description
-Description: Description of panda_description
-Version: 0.7.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: xacro

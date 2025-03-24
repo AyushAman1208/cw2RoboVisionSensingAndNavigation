@@ -1,1 +1,0 @@
-/home/ayush/Documents/CW/cw2RoboVisionSensingAndNavigation/devel/.private/cw2_team_x/share/roseus/ros/cw2_team_x/srv/example.l
