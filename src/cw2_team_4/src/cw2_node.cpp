@@ -12,10 +12,10 @@ int main(int argc, char **argv){
   
   ros::init(argc,argv, "cw2_solution_node");
   ros::NodeHandle nh;
-
+  
   // create an instance of the cw2 class
   cw2 cw_class(nh);
-
+  
   // MoveIt! requirement for non-blocking group.move()
   ros::AsyncSpinner spinner(1);
   spinner.start();

@@ -66,7 +66,7 @@ import numpy as np
 # task 1 parameters                 
 T1_SHAPE_X_LIMS = [0.40, 0.55]           # xrange a shape can spawn
 T1_SHAPE_Y_LIMS = [-0.40, 0.40]          # yrange a shape can spawn
-T1_ANY_ORIENTATION = False               # do we allow any rotation of a shape
+T1_ANY_ORIENTATION = True               # do we allow any rotation of a shape
 T1_GROUND_PLANE_NOISE = 0e-3             # do we add noise on the z height of the green tiles
 T1_USE_MULTIPLE_SIZES = False            # do we spawn objects with varying sizes
 
@@ -290,7 +290,7 @@ class Task1(Task):
     self.object_type = rand_object
     
     # spawn a goal basket
-    random_goal = BASKET_LOCATIONS[np.random.random_integers(0, len(BASKET_LOCATIONS)) - 1]
+    random_goal = BASKET_LOCATIONS[np.random.randint(0, len(BASKET_LOCATIONS))]
     self.spawn_model(name="basket", point=random_goal)
 
     return

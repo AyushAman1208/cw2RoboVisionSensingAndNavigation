@@ -15,15 +15,33 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/PointStamped.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/PointCloud.h>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
 
+// PCL includes
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/common/common.h>
+#include <pcl/common/centroid.h>
+#include <pcl/common/pca.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/features/moment_of_inertia_estimation.h>
 
 // standard c++ library includes (std::string, std::vector)
 #include <string>
 #include <vector>
+#include <iostream>
+#include <cmath>
+#include <Eigen/Dense>
 
 // include services from the spawner package - we will be responding to these
 #include "cw2_world_spawner/Task1Service.h"
@@ -36,6 +54,8 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include "cw2_team_4/Pick.h"
 #include "cw2_team_4/Place.h"
 
+
+
 class cw2
 {
 public:
@@ -43,6 +63,7 @@ public:
   /* ----- class member functions ----- */
 
   // constructor
+  cw2();
   cw2(ros::NodeHandle nh);
 
   bool t1_callback(cw2_world_spawner::Task1Service::Request &request,
@@ -66,6 +87,7 @@ public:
   bool pick(const geometry_msgs::Pose &object_loc);
   bool place(const geometry_msgs::Pose &goal_loc);
 
+
   // Define constant values
   std::string base_frame_ = "panda_link0";
   float gripper_open_ = 80e-3;
@@ -85,7 +107,8 @@ public:
   moveit::planning_interface::MoveGroupInterface arm_group_{"panda_arm"};
   moveit::planning_interface::MoveGroupInterface hand_group_{"hand"};
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface_;
-
+  
 };
+
 
 #endif // end of include guard for cw2_CLASS_H_

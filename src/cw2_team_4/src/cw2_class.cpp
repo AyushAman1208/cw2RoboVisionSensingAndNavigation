@@ -8,6 +8,9 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include "task2.h"
 #include "task3.h"
 
+typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
+typedef typename PointCloud::Ptr PointCPtr;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 cw2::cw2(ros::NodeHandle nh) : nh_(nh) {
@@ -182,7 +185,8 @@ cw2::moveGripper(float width)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-bool cw2::pick(const geometry_msgs::Pose &object_pose) {
+bool 
+cw2::pick(const geometry_msgs::Pose &object_pose) {
   // Calculate the pre-grasp pose
   geometry_msgs::Pose pre_grasp_pose = object_pose;
   pre_grasp_pose.position.z += 0.3;  // Adjust height for pre-grasp
@@ -200,7 +204,8 @@ bool cw2::pick(const geometry_msgs::Pose &object_pose) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
-bool cw2::place(const geometry_msgs::Pose &goal_pose) {
+bool 
+cw2::place(const geometry_msgs::Pose &goal_pose) {
   // Calculate the pre-place pose
   geometry_msgs::Pose pre_place_pose = goal_pose;
   pre_place_pose.position.z += 0.3;  // Adjust height for pre-place
@@ -215,4 +220,3 @@ bool cw2::place(const geometry_msgs::Pose &goal_pose) {
   // Return to the pre-place position
   return moveArm(pre_place_pose);
 }
-

@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   tf2
   tf2_ros
+  tf2_geometry_msgs
   pcl_ros
   cw2_world_spawner
 )
@@ -22,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(PCL REQUIRED)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -81,6 +83,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -115,7 +118,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES move_panda
- CATKIN_DEPENDS message_runtime cw2_world_spawner
+ CATKIN_DEPENDS message_runtime cw2_world_spawner tf2_ros tf2_geometry_msgs pcl_ros
 #  DEPENDS system_lib
 )
 
@@ -172,7 +175,7 @@ add_dependencies(cw2_solution_node
 target_link_libraries(cw2_solution_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}_cw2_class_lib
-  ${PCL_INCLUDE_DIRS}
+  ${PCL_LIBRARIES}
 )
 
 #############
