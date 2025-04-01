@@ -1,0 +1,25 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/shalwani/comp0250_s25_labs/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/shalwani/comp0250_s25_labs/src/cw1_team_4/include/**",
+        "/home/shalwani/comp0250_s25_labs/src/cw2RoboVisionSensingAndNavigation/src/cw2_team_4/include/**",
+        "/home/shalwani/comp0250_s25_labs/src/cw2RoboVisionSensingAndNavigation/src/cw2_team_x/include/**",
+        "/home/shalwani/comp0250_s25_labs/src/cw2RoboVisionSensingAndNavigation/src/realsense_gazebo_plugin/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

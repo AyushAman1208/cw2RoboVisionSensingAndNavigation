@@ -42,6 +42,8 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include <iostream>
 #include <cmath>
 #include <Eigen/Dense>
+#include <algorithm>
+#include <limits>
 
 // include services from the spawner package - we will be responding to these
 #include "cw2_world_spawner/Task1Service.h"
