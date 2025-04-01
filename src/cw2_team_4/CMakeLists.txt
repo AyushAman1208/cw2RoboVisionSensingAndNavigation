@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-find_package(PCL REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io filters features segmentation)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -173,6 +173,7 @@ target_link_libraries(cw2_solution_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}_cw2_class_lib
   ${PCL_INCLUDE_DIRS}
+  ${PCL_LIBRARIES}
 )
 
 #############
@@ -229,3 +230,5 @@ target_link_libraries(cw2_solution_node
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+add_definitions(${PCL_DEFINITIONS})
+link_directories(${PCL_LIBRARY_DIRS})

@@ -193,10 +193,7 @@ bool cw2::pick(const geometry_msgs::Pose &object_pose) {
   geometry_msgs::Pose grasp_pose = object_pose;
   grasp_pose.position.z += 0.12;  // Adjust for grasping position
   if (!moveArm(grasp_pose)) return false;
-  if (!moveGripper(gripper_closed_)) return false;
-
-  // Return to the pre-grasp position
-  return moveArm(pre_grasp_pose);
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
