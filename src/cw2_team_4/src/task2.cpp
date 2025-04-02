@@ -14,7 +14,6 @@
 #include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/common/pca.h>
 #include <pcl/io/pcd_io.h>
-
 #include <pcl/filters/passthrough.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <set>
@@ -22,81 +21,43 @@
 
 namespace task2 {
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr capturePointCloud() {
-        ROS_INFO("Waiting for point cloud...");
+pcl::PointCloud<pcl::PointXYZ>::Ptr capturePointCloud(ros::NodeHandle &nh) {
+    ROS_INFO("Waiting for a fresh point cloud...");
     
-        // Use waitForMessage with a timeout (e.g., 5 seconds)
+    std::vector<std::string> pointcloud_topics = {
+        "/camera/depth_registered/points",
+        "/r200/camera/depth_registered/points",
+        "/r200/camera/depth/image_rect_raw",
+        "/r200/camera/depth/image_raw"
+    };
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    bool received = false;
+
+    for (const auto& topic : pointcloud_topics) {
+        ROS_INFO("Trying topic: %s", topic.c_str());
+
+        ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic, nh, ros::Duration(0.5));
         boost::shared_ptr<const sensor_msgs::PointCloud2> msg =
-            ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/depth_registered/points", ros::Duration(5.0));
-    
-        if (!msg) {
-            ROS_WARN("No point cloud received from /camera/depth_registered/points, trying alternative topic...");
-    
-            // Attempt to get the point cloud from an alternative topic
-            msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/r200/camera/depth_registered/points", ros::Duration(5.0));
-    
-            if (!msg) {
-                ROS_ERROR("No point cloud received from both topics within timeout.");
-                return nullptr;
-            }
+            ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic, nh, ros::Duration(5.0));
+
+        if (msg) {
+            pcl::fromROSMsg(*msg, *cloud);
+            ROS_INFO("Point cloud received successfully from %s", topic.c_str());
+            received = true;
+            break;
+        } else {
+            ROS_WARN("No point cloud received from %s", topic.c_str());
         }
-    
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::fromROSMsg(*msg, *cloud);
-    
-        ROS_INFO("Point cloud received successfully.");
-        return cloud;
-    }
-    void extractZCoordinatesAndFilterObject(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
-    std::set<float> unique_z_values; // Set to store unique z-coordinates
-
-    // Iterate over all points in the cloud and extract unique z-coordinates
-    for (const auto& point : cloud->points) {
-        unique_z_values.insert(point.z); // Insert Z value into the set
     }
 
-    // Print unique z-coordinates
-    std::cout << "Unique Z-coordinates: " << std::endl;
-    for (const auto& z : unique_z_values) {
-        std::cout << z << std::endl;
+    if (!received) {
+        ROS_ERROR("Failed to receive point cloud from all available sources.");
+        return nullptr;
     }
 
-    // Define z-value range for filtering (modify based on your object's z-range)
-    float z_min = 0.49f; // Minimum z-value for the object
-    float z_max = 0.55f; // Maximum z-value for the object
-
-    // Apply Pass-Through filter based on z-coordinate
-    pcl::PassThrough<pcl::PointXYZ> pass;
-    pass.setInputCloud(cloud);
-    pass.setFilterFieldName("z");  // Filter based on the z-coordinate
-    pass.setFilterLimits(z_min, z_max);  // Filter points within the specified range
-    pass.filter(*cloud);  // Apply filter
-
-    // Print the number of points after filtering
-    std::cout << "\nNumber of points after filtering: " << cloud->size() << std::endl;
-
-    // Optionally, print the filtered points
-    std::cout << "Filtered Points (first 5 shown):" << std::endl;
-    for (size_t i = 0; i < std::min<size_t>(cloud->size(), 5); ++i) {
-        std::cout << "Point " << i << ": (" 
-                  << cloud->points[i].x << ", " 
-                  << cloud->points[i].y << ", " 
-                  << cloud->points[i].z << ")" << std::endl;
-    }
-
-    // Visualization part
-    pcl::visualization::PCLVisualizer viewer("Filtered Point Cloud");
-    viewer.addPointCloud<pcl::PointXYZ>(cloud, "filtered_cloud");
-
-    // Set up background color (optional)
-    viewer.setBackgroundColor(0, 0, 0);  // Black background
-
-    // Start the visualization loop
-    viewer.spin();  // Keep the window open until closed by the user
+    return cloud;
 }
-
-    
-    
 
 std::string classifyShape(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
     std::cout << "Reached classifyShape" << std::endl;
@@ -141,58 +102,57 @@ std::string classifyShape(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
     return shape;
 }
 
+std::string takeObservation(geometry_msgs::PointStamped &observation_pose, ros::NodeHandle &nh) {
+    std::cout << "Reached takeObservation" << std::endl;
 
-    std::string takeObservation(geometry_msgs::PointStamped &observation_pose) {
-        std::cout << "Reached takeObservation";
-        std::cout << std::endl;
-        geometry_msgs::Pose curr_pose;
-        curr_pose.position.x = observation_pose.point.x;
-        curr_pose.position.y = observation_pose.point.y;
-        curr_pose.position.z = observation_pose.point.z + 0.6;
-    
-        tf2::Quaternion quat;
-        quat.setRPY(M_PI, 0, -M_PI / 4);
-        curr_pose.orientation = tf2::toMsg(quat);
-    
-        ros::NodeHandle nh;
-        cw2 robot(nh);
-        if (!robot.moveArm(curr_pose)) return "Error";
-    
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = capturePointCloud();
-        
-        // Clear any previous data in cloud before processing
-        
-        std::string shape = classifyShape(cloud);
-        cloud->clear();
-        
-        return shape;
+    geometry_msgs::Pose curr_pose;
+    curr_pose.position.x = observation_pose.point.x;
+    curr_pose.position.y = observation_pose.point.y;
+    curr_pose.position.z = observation_pose.point.z + 0.6;
+
+    tf2::Quaternion quat;
+    quat.setRPY(M_PI, 0, -M_PI / 4);
+    curr_pose.orientation = tf2::toMsg(quat);
+
+    cw2 robot(nh);
+    if (!robot.moveArm(curr_pose)) return "Error";
+
+    ros::Duration(1.0).sleep();  // Allow sensor time to refresh
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = capturePointCloud(nh);
+
+    if (!cloud || cloud->empty()) {
+        ROS_ERROR("Captured cloud is empty");
+        return "Error";
     }
-    
+
+    std::string shape = classifyShape(cloud);
+    cloud->clear();
+
+    return shape;
+}
 
 bool solve(const cw2_world_spawner::Task2Service::Request &req,
            cw2_world_spawner::Task2Service::Response &res) {
     ROS_INFO("[Task2] Solving Task 2...");
 
+    ros::NodeHandle nh;
     std::vector<geometry_msgs::PointStamped> object_points = req.ref_object_points;
     geometry_msgs::PointStamped goal_point = req.mystery_object_point;
 
-    std::string shape1 = takeObservation(object_points.at(0));
-    std::string shape2 = takeObservation(object_points.at(1));
-    std::string unknownShape = takeObservation(goal_point);
+    std::string shape1 = takeObservation(object_points.at(0), nh);
+    std::string shape2 = takeObservation(object_points.at(1), nh);
+    std::string unknownShape = takeObservation(goal_point, nh);
 
     ROS_INFO("Object 1: %s, Object 2: %s, Unknown: %s", shape1.c_str(), shape2.c_str(), unknownShape.c_str());
 
-    std::cout<<"Unknown shape:  "<<unknownShape;
-    std::cout<<std::endl;
-    if(shape1 == unknownShape){
+    if (shape1 == unknownShape) {
         ROS_INFO("Unknown object matches object 1");
-    }
-    else if(shape2 == unknownShape){
+    } else if (shape2 == unknownShape) {
         ROS_INFO("Unknown object matches object 2");
+    } else {
+        ROS_INFO("Unknown object doesn't match any of the two reference shapes.");
     }
-    else{
-        ROS_INFO("Unknown object dosen't match any of the two reference shapes.");
-    }
+
     return true;
 }
 
