@@ -1,12 +1,10 @@
 #pragma once
 
-#include <cw2_world_spawner/Task2Service.h>
-#include <geometry_msgs/PointStamped.h>
-#include <string>
-#include <ros/ros.h>
-#include <geometry_msgs/Pose.h>
 #include "task2.h"
 #include "cw2_class.h"
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/Pose.h>
+#include <ros/ros.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <pcl/point_cloud.h>
@@ -16,6 +14,13 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
+#include <pcl/common/pca.h>
+#include <pcl/io/pcd_io.h>
+
+#include <pcl/filters/passthrough.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <set>
+#include <iostream>
 
 namespace task2 {
   bool solve(const cw2_world_spawner::Task2Service::Request &req,
