@@ -9,11 +9,6 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <pcl/features/moment_of_inertia_estimation.h>
-#include <pcl/common/pca.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <set>
@@ -21,7 +16,7 @@
 
 namespace task2 {
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr capturePointCloud(ros::NodeHandle &nh) {
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr capturePointCloud(ros::NodeHandle &nh) {
     ROS_INFO("Waiting for a fresh point cloud...");
     
     std::vector<std::string> pointcloud_topics = {
@@ -31,7 +26,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr capturePointCloud(ros::NodeHandle &nh) {
         "/r200/camera/depth/image_raw"
     };
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     bool received = false;
 
     for (const auto& topic : pointcloud_topics) {
@@ -53,107 +48,93 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr capturePointCloud(ros::NodeHandle &nh) {
 
     if (!received) {
         ROS_ERROR("Failed to receive point cloud from all available sources.");
-        return nullptr;
+    return nullptr;
     }
 
     return cloud;
 }
 
-std::string classifyShape(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud) {
-    std::cout << "Reached classifyShape" << std::endl;
-
-    // Downsampling using Voxel Grid Filter
-    pcl::VoxelGrid<pcl::PointXYZ> voxel;
-    voxel.setInputCloud(cloud);
-    voxel.setLeafSize(0.005f, 0.005f, 0.005f);
-    voxel.filter(*cloud);
-
-    pcl::PCA<pcl::PointXYZ> pca;
-    pca.setInputCloud(cloud);
-
-    Eigen::Vector3f eigenvalues = pca.getEigenValues();  // Sorted in descending order
-    float eigenvalue1 = eigenvalues[0];  // Largest
-    float eigenvalue2 = eigenvalues[1];  // Second largest
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr cropPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, geometry_msgs::PointStamped &observation_pose) {
+    pcl::PassThrough<pcl::PointXYZRGB> pass;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cropped_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     
-    std::cout << "\nPCA Eigenvalues:" << std::endl;
-    std::cout << " - Largest Eigenvalue: " << eigenvalue1 << std::endl;
-    std::cout << " - Second Largest Eigenvalue: " << eigenvalue2 << std::endl;
-
-    // Compute the ratio of the two largest eigenvalues
-    float eigen_ratio = eigenvalue1 / eigenvalue2;
-    std::cout << " - Eigenvalue Ratio: " << eigen_ratio << std::endl;
-
-    // Shape classification based on eigenvalue ratio
-    std::string shape;
-    if (eigen_ratio < 1.2) {
-        shape = "Square";  // Shapes that are more cube-like
-    } else {
-        shape = "Cross";   // Elongated shapes
-    }
+    float range = 0.1;
+    pass.setInputCloud(cloud);
+    pass.setFilterFieldName("x");
+    pass.setFilterLimits(observation_pose.point.x - range, observation_pose.point.x + range);
+    pass.filter(*cropped_cloud);
+    
+    pass.setInputCloud(cropped_cloud);
+    pass.setFilterFieldName("y");
+    pass.setFilterLimits(observation_pose.point.y - range, observation_pose.point.y + range);
+    pass.filter(*cropped_cloud);
+    
+    pass.setInputCloud(cropped_cloud);
+    pass.setFilterFieldName("z");
+    pass.setFilterLimits(observation_pose.point.z - range, observation_pose.point.z + range);
+    pass.filter(*cropped_cloud);
 
     // Visualization part - Create a new viewer for each object
     pcl::visualization::PCLVisualizer viewer("Object Viewer");
-    viewer.addPointCloud<pcl::PointXYZ>(cloud, "cloud");
+    viewer.addPointCloud<pcl::PointXYZRGB>(cropped_cloud, "cloud");
     viewer.setBackgroundColor(0, 0, 0);  // Set background to black
     viewer.spin();  // Keep the window open until closed by the user
-
-    std::cout << " - Classified Shape: " << shape << std::endl;
     
-    return shape;
+    return cropped_cloud;
 }
 
-std::string takeObservation(geometry_msgs::PointStamped &observation_pose, ros::NodeHandle &nh) {
-    std::cout << "Reached takeObservation" << std::endl;
+bool comparePointClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2) {
+    if (cloud1->size() != cloud2->size()) return false;
+    Eigen::Vector4f centroid1, centroid2;
+    pcl::compute3DCentroid(*cloud1, centroid1);
+    pcl::compute3DCentroid(*cloud2, centroid2);
+    return (centroid1 - centroid2).norm() < 0.02;
+}
 
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr takeObservation(geometry_msgs::PointStamped &observation_pose, ros::NodeHandle &nh) {
+    cw2 robot(nh);
     geometry_msgs::Pose curr_pose;
     curr_pose.position.x = observation_pose.point.x;
     curr_pose.position.y = observation_pose.point.y;
     curr_pose.position.z = observation_pose.point.z + 0.6;
-
     tf2::Quaternion quat;
     quat.setRPY(M_PI, 0, -M_PI / 4);
     curr_pose.orientation = tf2::toMsg(quat);
+    
+    if (!robot.moveArm(curr_pose)) return nullptr;
+    ros::Duration(1.0).sleep();
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = capturePointCloud(nh);
+    if (!cloud || cloud->empty()) return nullptr;
 
-    cw2 robot(nh);
-    if (!robot.moveArm(curr_pose)) return "Error";
-
-    ros::Duration(1.0).sleep();  // Allow sensor time to refresh
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = capturePointCloud(nh);
-
-    if (!cloud || cloud->empty()) {
-        ROS_ERROR("Captured cloud is empty");
-        return "Error";
-    }
-
-    std::string shape = classifyShape(cloud);
-    cloud->clear();
-
-    return shape;
+    // Visualization part - Create a new viewer for each object
+    pcl::visualization::PCLVisualizer viewer("Object Viewer");
+    viewer.addPointCloud<pcl::PointXYZRGB>(cloud, "cloud");
+    viewer.setBackgroundColor(0, 0, 0);  // Set background to black
+    viewer.spin();  // Keep the window open until closed by the user
+    return cloud;
 }
 
-bool solve(const cw2_world_spawner::Task2Service::Request &req,
-           cw2_world_spawner::Task2Service::Response &res) {
+bool solve(const cw2_world_spawner::Task2Service::Request &req, cw2_world_spawner::Task2Service::Response &res) {
     ROS_INFO("[Task2] Solving Task 2...");
-
     ros::NodeHandle nh;
     std::vector<geometry_msgs::PointStamped> object_points = req.ref_object_points;
     geometry_msgs::PointStamped goal_point = req.mystery_object_point;
+    auto ref_cloud1 = takeObservation(object_points.at(0), nh);
+    auto ref_cloud2 = takeObservation(object_points.at(1), nh);
+    auto goal_cloud = takeObservation(goal_point, nh);
+    
 
-    std::string shape1 = takeObservation(object_points.at(0), nh);
-    std::string shape2 = takeObservation(object_points.at(1), nh);
-    std::string unknownShape = takeObservation(goal_point, nh);
-
-    ROS_INFO("Object 1: %s, Object 2: %s, Unknown: %s", shape1.c_str(), shape2.c_str(), unknownShape.c_str());
-
-    if (shape1 == unknownShape) {
+    if (!ref_cloud1 || !ref_cloud2 || !goal_cloud) {
+        ROS_ERROR("One or more point clouds are empty");
+        return false;
+    }
+    if (comparePointClouds(ref_cloud1, goal_cloud)) {
         ROS_INFO("Unknown object matches object 1");
-    } else if (shape2 == unknownShape) {
+    } else if (comparePointClouds(ref_cloud2, goal_cloud)) {
         ROS_INFO("Unknown object matches object 2");
     } else {
-        ROS_INFO("Unknown object doesn't match any of the two reference shapes.");
+        ROS_INFO("Unknown object does not match any reference object");
     }
-
     return true;
 }
-
 }
