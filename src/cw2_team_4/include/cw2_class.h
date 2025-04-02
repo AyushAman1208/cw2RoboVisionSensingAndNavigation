@@ -35,6 +35,13 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
+#include <pcl/visualization/pcl_visualizer.h>
+
+
+// opencv includes
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 // standard c++ library includes (std::string, std::vector)
 #include <string>
