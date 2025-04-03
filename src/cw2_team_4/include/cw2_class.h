@@ -33,6 +33,7 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include <pcl/common/pca.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/passthrough.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -72,7 +73,6 @@ public:
   /* ----- class member functions ----- */
 
   // constructor
-  cw2();
   cw2(ros::NodeHandle nh);
 
   bool t1_callback(cw2_world_spawner::Task1Service::Request &request,

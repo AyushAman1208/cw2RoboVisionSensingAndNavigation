@@ -9,5 +9,5 @@
 namespace task1 {
 
   bool solve(const cw2_world_spawner::Task1Service::Request &req,
-             cw2_world_spawner::Task1Service::Response &res);
+             cw2_world_spawner::Task1Service::Response &res, cw2 &robot, ros::NodeHandle &nh);
 }

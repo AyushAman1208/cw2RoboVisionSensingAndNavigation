@@ -6,7 +6,7 @@ namespace task1 {
     ROS_INFO("Waiting for a fresh point cloud...");
 
     std::string topic = "/r200/camera/depth_registered/points";
-    const double freshnessThreshold = 10.0; // Accept only messages published in the past 10 seconds
+    const double freshnessThreshold = 3.0; // Accept only messages published in the past 10 seconds
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     bool received = false;
 
@@ -215,18 +215,15 @@ float angleRad = finalAngleDegrees * (M_PI / 180.0f);
 
 ROS_INFO("Final computed angle: %f degrees", finalAngleDegrees);
 
-// For demonstration, return the computed angle in radians.
+// Return the computed angle in radians.
 return angleRad;
 }
 
   bool solve(const cw2_world_spawner::Task1Service::Request &req,
-             cw2_world_spawner::Task1Service::Response &res)
+             cw2_world_spawner::Task1Service::Response &res, cw2 &robot, ros::NodeHandle &nh)
   {
     ROS_INFO("[Task1] Solving Task 1...");
 
-    // Create an instance of the cw2 class to access moveArm, moveGripper, etc.
-    ros::NodeHandle nh;
-    cw2 robot(nh);  // Pass the NodeHandle to the constructor
 
     // Move to home position.
     geometry_msgs::Pose home_pose;
@@ -236,9 +233,13 @@ return angleRad;
 
     tf2::Quaternion quat2;
     quat2.setRPY(M_PI, 0, -M_PI / 4);
-    geometry_msgs::Quaternion original_orientation = tf2::toMsg(quat2);
+    geometry_msgs::Quaternion positive_orientation = tf2::toMsg(quat2);
 
-    home_pose.orientation = original_orientation;  // Use the same orientation as the object
+    tf2::Quaternion quat3;
+    quat3.setRPY(M_PI, 0, 3*M_PI / 4);
+    geometry_msgs::Quaternion negative_orientation = tf2::toMsg(quat2);
+
+    home_pose.orientation = positive_orientation;  // Use the same orientation as the object
     if (!robot.moveArm(home_pose)) {
       ROS_ERROR("Failed to move back to home position");
       return false;
@@ -253,10 +254,16 @@ return angleRad;
     geometry_msgs::Pose observe_pose;
     observe_pose.position = object_point.point;
     observe_pose.position.z += 0.5;  // Adjust height for observing
-    observe_pose.position.x -= 0.04;  // Adjust x position for observing
+    if (object_point.point.x < 0){
+      observe_pose.position.x += 0.04;
+      observe_pose.orientation = negative_orientation;
+    }
+    else if (object_point.point.x > 0){
+        observe_pose.position.x -= 0.04;
+        observe_pose.orientation = positive_orientation;
+    }
 
-    observe_pose.orientation = original_orientation;
-
+    
     if (!robot.moveArm(observe_pose)) {
       ROS_ERROR("Failed to move to observe pose");
       return false;
@@ -327,7 +334,14 @@ return angleRad;
     geometry_msgs::Pose goal_pose;
     goal_pose.position = goal_point.point;
     goal_pose.position.z += 0.2;  // Adjust height for placing
-    goal_pose.orientation = original_orientation;  // Use the same orientation as the object
+    if (goal_point.point.x < 0){
+      goal_pose.position.x += 0.04;
+      goal_pose.orientation = negative_orientation;
+    }
+    else if (goal_point.point.x > 0){
+        goal_pose.position.x -= 0.04;
+        goal_pose.orientation = positive_orientation;
+    }
 
     // Attempt to place the object in the basket.
     if (!robot.place(goal_pose)) {
@@ -335,7 +349,6 @@ return angleRad;
       return false;
     }
 
-    
     // Move the arm back to home position.
     if (!robot.moveArm(home_pose)) {
       ROS_ERROR("Failed to move back to home position");

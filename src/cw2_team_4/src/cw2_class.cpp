@@ -30,10 +30,10 @@ bool
 cw2::t1_callback(cw2_world_spawner::Task1Service::Request &request,
   cw2_world_spawner::Task1Service::Response &response) 
 {
-  /* function which should solve task 1 */
+    /* function which should solve task 1 */
 
   ROS_INFO("The coursework solving callback for task 1 has been triggered");
-  return task1::solve(request, response);
+  return task1::solve(request, response, *this, nh_);
 
   return true;
 }
@@ -47,7 +47,7 @@ cw2::t2_callback(cw2_world_spawner::Task2Service::Request &request,
   /* function which should solve task 2 */
 
   ROS_INFO("The coursework solving callback for task 2 has been triggered");
-  return task2::solve(request, response);
+  return task2::solve(request, response, *this, nh_);
 
   return true;
 }
