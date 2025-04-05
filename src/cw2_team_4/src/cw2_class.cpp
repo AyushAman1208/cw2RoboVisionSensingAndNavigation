@@ -61,7 +61,7 @@ cw2::t3_callback(cw2_world_spawner::Task3Service::Request &request,
   /* function which should solve task 3 */
 
   ROS_INFO("The coursework solving callback for task 3 has been triggered");
-  return task3::solve(request, response);
+  return task3::solve(request, response, *this, nh_);
 
   return true;
 }
