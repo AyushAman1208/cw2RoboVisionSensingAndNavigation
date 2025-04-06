@@ -1,10 +1,7 @@
 #include "cw2_class.h"
 #include "task3.h"
 
-
 namespace task3 {
-
-
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr capturePointCloud(ros::NodeHandle &nh) { 
     ROS_INFO("Waiting for a fresh point cloud...");
@@ -43,17 +40,6 @@ namespace task3 {
         return nullptr;
     }
 
-    // // -------------------------
-    // // Apply voxel grid filtering.
-    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxelFiltered(new pcl::PointCloud<pcl::PointXYZRGB>);
-    // pcl::VoxelGrid<pcl::PointXYZRGB> voxel;
-    // voxel.setInputCloud(cloud);
-    // voxel.setLeafSize(0.001f, 0.001f, 0.001f);  // Adjust leaf size (5 mm) as needed.
-    // voxel.filter(*voxelFiltered);
-
-    // ROS_INFO("After voxel filtering, %lu points remain.", voxelFiltered->points.size());
-
-
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
     const int green_threshold = 50;
     // const int threshold = 100; // Adjust based on your sensor's scaling.
@@ -73,7 +59,7 @@ namespace task3 {
   }
   }
 
-  // Extract clusters from a point cloud and filter clusters based on size.
+    // Extract clusters from a point cloud and filter clusters based on size.
 // Only clusters with maximum dimension (x or y) between 0.08 m and 0.22 m are returned.
 std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> extractClusters(
   const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud)
@@ -129,291 +115,6 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> extractClusters(
   return clusters;
 }
 
-  cv::Mat pointCloudToImage(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud,
-    int imageWidth, int imageHeight,
-    float &scale, float &offsetX, float &offsetY)
-  {
-  float minX = std::numeric_limits<float>::max();
-  float maxX = -std::numeric_limits<float>::max();
-  float minY = std::numeric_limits<float>::max();
-  float maxY = -std::numeric_limits<float>::max();
-
-  // Compute the bounding box of the cloud (x-y only)
-  for (const auto &pt : cloud->points) {
-  if (pt.x < minX) minX = pt.x;
-  if (pt.x > maxX) maxX = pt.x;
-  if (pt.y < minY) minY = pt.y;
-  if (pt.y > maxY) maxY = pt.y;
-  }
-
-  float rangeX = maxX - minX;
-  float rangeY = maxY - minY;
-  scale = std::min(imageWidth / rangeX, imageHeight / rangeY);
-  scale = scale * 0.8; // Scale down to fit in the image
-
-  offsetX = -minX * scale;  // This will map minX to 0.
-  offsetY = -minY * scale;  // This will map minY to 0.
-
-  cv::Mat image = cv::Mat::zeros(imageHeight, imageWidth, CV_8UC1);
-  for (const auto &pt : cloud->points) {
-  int x = static_cast<int>(pt.x * scale + offsetX);
-  int y = static_cast<int>(pt.y * scale + offsetY);
-  if (x >= 0 && x < imageWidth && y >= 0 && y < imageHeight) {
-  image.at<uchar>(y, x) = 255; // mark point as white
-  }
-  }
-  return image;
-  }
-
-  std::vector<cv::Point> extractContour(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud)
-{
-    // Convert point cloud to image (using your dynamic scaling function).
-    float scale, offsetX, offsetY;
-    cv::Mat img = pointCloudToImage(cloud, 500, 500, scale, offsetX, offsetY);
-
-    // Optionally preprocess (e.g., Gaussian blur).
-    cv::GaussianBlur(img, img, cv::Size(5,5), 0);
-
-    // Apply Canny edge detection on the adaptive-thresholded image.
-    cv::Mat edges;
-    cv::Canny(img, edges, 50, 150);
-
-    // Find contours.
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(edges, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-    if (contours.empty()) {
-        ROS_WARN("No contours found!");
-        return std::vector<cv::Point>();
-    }
-
-    // Return the largest contour.
-    double maxArea = 0;
-    int maxIdx = 0;
-    for (size_t i = 0; i < contours.size(); i++) {
-        double area = cv::contourArea(contours[i]);
-        if (area > maxArea) {
-            maxArea = area;
-            maxIdx = i;
-        }
-    }
-    // Optional: Show image for debugging
-    cv::Mat imageColor;
-    cv::cvtColor(img, imageColor, cv::COLOR_GRAY2BGR);
-    cv::drawContours(imageColor, contours, maxIdx, cv::Scalar(0,255,0), 2);
-    cv::imshow("Largest Contour", imageColor);
-    cv::waitKey(0);
-
-    return contours[maxIdx];
-}
-      
-      // // Smooth the contour to remove small irregularities
-      // std::vector<cv::Point> smoothedContour;
-      // cv::approxPolyDP(filteredContours[maxIdx], smoothedContour, 
-      //                 0.003 * cv::arcLength(filteredContours[maxIdx], true), true);
-      
-      // // If the approximation is too aggressive, use original contour
-      // if (smoothedContour.size() < 5) {
-      //     smoothedContour = filteredContours[maxIdx];
-      // }
-      
-      // // Create visualization for debugging
-      // cv::Mat debug;
-      // cv::cvtColor(img, debug, cv::COLOR_GRAY2BGR);
-      
-      // // Draw all filtered contours in blue
-      // cv::drawContours(debug, filteredContours, -1, cv::Scalar(255, 0, 0), 1);
-      
-      // // Draw the largest contour in green
-      // cv::drawContours(debug, std::vector<std::vector<cv::Point>>{smoothedContour}, 0, cv::Scalar(0, 255, 0), 2);
-      
-      // // Show intermediate processing steps
-      // // cv::imshow("Original Image", img);
-      // // cv::imshow("Preprocessed Binary", morphed);
-      // cv::imshow("Contour Detection", debug);
-      // cv::waitKey(0);  // Use non-zero value for debugging
-      
-      // return smoothedContour;
-
-std::string classifyShape(const std::vector<cv::Point>& contour)
-{    // Skip if contour is too small
-  if (contour.size() < 5) {
-    return "none";
-}
-
-// Calculate basic properties
-cv::Rect boundingRect = cv::boundingRect(contour);
-double contourArea = cv::contourArea(contour);
-
-// Filter out very small contours that might be noise
-if (contourArea < 100) { // Adjust this threshold based on your image scale
-  return "none";
-}
-
-double boundingRectArea = boundingRect.width * boundingRect.height;
-    // Find moments for center of mass
-    cv::Moments moments = cv::moments(contour);
-    if (moments.m00 <= 0) {
-        return "none";
-    }
-    
-    double centerX = moments.m10 / moments.m00;
-    double centerY = moments.m01 / moments.m00;
-    cv::Point centerPoint(static_cast<int>(centerX), static_cast<int>(centerY));
-    
-    // Create a mask from the contour
-    cv::Mat mask = cv::Mat::zeros(boundingRect.height + 2, boundingRect.width + 2, CV_8UC1);
-    std::vector<cv::Point> shiftedContour;
-    
-    for (const auto& point : contour) {
-        shiftedContour.push_back(cv::Point(point.x - boundingRect.x + 1, point.y - boundingRect.y + 1));
-    }
-    
-    std::vector<std::vector<cv::Point>> shiftedContours = {shiftedContour};
-    cv::drawContours(mask, shiftedContours, 0, cv::Scalar(255), cv::FILLED);
-    
-    // Find contours in the mask to detect holes
-    std::vector<std::vector<cv::Point>> innerContours;
-    cv::Mat maskCopy = mask.clone();
-    cv::findContours(maskCopy, innerContours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-    
-    // Analyze holes
-    bool hasHole = false;
-    double holeArea = 0;
-    
-    if (innerContours.size() > 1) {
-        // Sort contours by area (descending)
-        std::sort(innerContours.begin(), innerContours.end(), 
-                 [](const std::vector<cv::Point>& c1, const std::vector<cv::Point>& c2) {
-                     return cv::contourArea(c1) > cv::contourArea(c2);
-                 });
-        
-        // Check if the second largest contour is actually a hole
-        if (innerContours.size() > 1) {
-            holeArea = cv::contourArea(innerContours[1]);
-            // A significant hole (relative to contour area) indicates a nought
-            hasHole = (holeArea > 0.1 * contourArea);
-        }
-    }
-    
-    // Calculate solidity (ratio of contour area to convex hull area)
-    std::vector<cv::Point> hull;
-    cv::convexHull(contour, hull);
-    double hullArea = cv::contourArea(hull);
-    double solidity = (hullArea > 0) ? contourArea / hullArea : 0;
-    
-    // Calculate extent (ratio of contour area to bounding rectangle area)
-    double extent = contourArea / boundingRectArea;
-    
-    // Calculate aspect ratio
-    double aspectRatio = static_cast<double>(boundingRect.width) / boundingRect.height;
-    
-    // For cross detection: analyze the shape through orientation analysis
-    // A cross should have four main "arms" extending from the center
-    
-    // Create distance profile from center to edges
-    const int numAngles = 36; // Check every 10 degrees
-    std::vector<double> radialDistances(numAngles, 0);
-    std::vector<bool> isEdgePoint(numAngles, false);
-    
-    for (int i = 0; i < numAngles; i++) {
-        double angle = i * (2 * CV_PI / numAngles);
-        double maxDist = 0;
-        
-        // Scan from center to edge in this direction
-        for (double r = 0; r < std::max(boundingRect.width, boundingRect.height); r += 1.0) {
-            int x = centerX + r * cos(angle);
-            int y = centerY + r * sin(angle);
-            
-            // Check if point is inside the mask boundaries
-            if (x - boundingRect.x + 1 >= 0 && x - boundingRect.x + 1 < mask.cols &&
-                y - boundingRect.y + 1 >= 0 && y - boundingRect.y + 1 < mask.rows) {
-                
-                // Check if this point is still inside the shape
-                if (mask.at<uchar>(y - boundingRect.y + 1, x - boundingRect.x + 1) > 0) {
-                    maxDist = r;
-                } else {
-                    // We've hit the edge of the shape
-                    break;
-                }
-            } else {
-                // We've gone outside the mask boundaries
-                break;
-            }
-        }
-        
-        radialDistances[i] = maxDist;
-        if (maxDist > 0) {
-            isEdgePoint[i] = true;
-        }
-    }
-    
-    // Analyze the radial distance profile for peaks (arms of the cross)
-    int peakCount = 0;
-    bool inPeak = false;
-    double peakThreshold = 0.5 * *std::max_element(radialDistances.begin(), radialDistances.end());
-    
-    for (int i = 0; i < numAngles; i++) {
-        if (!inPeak && radialDistances[i] > peakThreshold) {
-            inPeak = true;
-            peakCount++;
-        } else if (inPeak && radialDistances[i] <= peakThreshold) {
-            inPeak = false;
-        }
-    }
-    
-    // Check the last and first elements for continuity
-    if (inPeak && radialDistances[0] <= peakThreshold) {
-        // Close the last peak if it wraps around
-        inPeak = false;
-    } else if (!inPeak && radialDistances[0] > peakThreshold && radialDistances[numAngles-1] > peakThreshold) {
-        // Adjust peak count if the peak wraps around
-        peakCount--;
-    }
-    
-    // Calculate standard deviation of non-zero distances to analyze distance uniformity
-    std::vector<double> nonZeroDistances;
-    for (const auto& dist : radialDistances) {
-        if (dist > 0) {
-            nonZeroDistances.push_back(dist);
-        }
-    }
-    
-    double meanDist = std::accumulate(nonZeroDistances.begin(), nonZeroDistances.end(), 0.0) / nonZeroDistances.size();
-    double sumVar = 0.0;
-    for (const auto& dist : nonZeroDistances) {
-        sumVar += (dist - meanDist) * (dist - meanDist);
-    }
-    double stdDev = std::sqrt(sumVar / nonZeroDistances.size());
-    double coeffVar = meanDist > 0 ? stdDev / meanDist : 0;
-    
-    // For a NOUGHT:
-    // - Should have a significant hole
-    // - High solidity (close to 1)
-    // - Aspect ratio close to 1 for square shape
-    // - Low coefficient of variation in radial distances (uniform distance from center)
-    
-    // For a CROSS:
-    // - No significant hole
-    // - Should have around 4 peaks in radial distance profile (4 arms)
-    // - Higher coefficient of variation due to arms
-    
-    // Improved classification logic
-    if (hasHole && holeArea > 0.2 * contourArea && 
-        solidity > 0.5 && 
-        aspectRatio > 0.6 && aspectRatio < 1.4 && 
-        coeffVar < 0.5) {
-        return "nought";
-    }
-    else if (!hasHole && 
-             peakCount >= 3 && peakCount <= 5 && // Allow some tolerance for imperfect crosses
-             solidity < 0.8 && 
-             coeffVar > 0.2) {
-        return "cross";
-    }
-    
-    return "none";
-}
 
 std::string classifyShapeFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
   if (cloud->empty()) {
@@ -458,7 +159,6 @@ std::string classifyShapeFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>:
   }
   
   // Step 4: Analyze the grid for shape characteristics
-  
   // Count occupied cells
   int occupiedCells = 0;
   for (const auto& row : occupancyGrid) {
@@ -579,13 +279,6 @@ std::string classifyShapeFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>:
   // OPTIMIZED CLASSIFICATION LOGIC BASED ON THE PROVIDED METRICS
   
   // ------ NOUGHT DETECTION -------
-  // From your metrics, a nought has:
-  // - Near-zero center density (0.00)
-  // - Moderate overall density (0.61)
-  // - High corner density (0.79)
-  // - Ring pattern with empty inner rings and filled outer rings [0.00, 0.00, 1.00, 1.00, 1.00]
-  // - Square aspect ratio (0.99)
-  
   bool isNought = centerDensity < 0.20 &&                 // Empty center
                   density > 0.40 &&                       // Substantial overall density
                   cornersDensity > 0.40 &&                // Corners are filled
@@ -603,14 +296,6 @@ std::string classifyShapeFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>:
   }
   
   // ------ CROSS DETECTION -------
-  // From your metrics, a cross has:
-  // - High center density (0.75)
-  // - Moderate overall density (0.44)
-  // - Zero corner density (0.00)
-  // - High arm density (0.71)
-  // - Uniform ring pattern [1.00, 1.00, 1.00, 1.00, 1.00]
-  // - Square aspect ratio (1.00)
-  
   bool isCross = centerDensity > 0.50 &&                  // Filled center
                  cornersDensity < 0.30 &&                 // Empty corners
                  armsDensity > 0.50 &&                    // Substantial arm density
@@ -697,6 +382,42 @@ std::string classifyShapeFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>:
     return std::make_pair(size, centroid);
 }
 
+// Function to transform point from camera frame to base frame
+std::vector<float> transformPointCameraToBase(
+  const std::vector<float>& point_camera_frame,
+  tf2_ros::Buffer& tf_buffer) {
+  
+  try {
+      // Get the transform from camera frame to base frame
+      // Note: We need to transform FROM camera TO base
+      geometry_msgs::TransformStamped transform_stamped = 
+          tf_buffer.lookupTransform("panda_link0", "depth", 
+                                   ros::Time(0), ros::Duration(1.0));
+      
+      // Create a point in geometry_msgs format
+      geometry_msgs::PointStamped point_cam;
+      point_cam.header.frame_id = "depth";
+      point_cam.header.stamp = ros::Time(0);
+      point_cam.point.x = point_camera_frame[0];
+      point_cam.point.y = point_camera_frame[1];
+      point_cam.point.z = point_camera_frame[2];
+      
+      // Transform the point
+      geometry_msgs::PointStamped point_base;
+      tf2::doTransform(point_cam, point_base, transform_stamped);
+      
+      // Return as vector
+      return {static_cast<float>(point_base.point.x),
+              static_cast<float>(point_base.point.y),
+              static_cast<float>(point_base.point.z)};
+  }
+  catch (tf2::TransformException &ex) {
+      ROS_ERROR("Failed to transform point from camera to base: %s", ex.what());
+      // Return original point as fallback
+      return point_camera_frame;
+  }
+}
+
   bool isNewCentroid(const geometry_msgs::Point &worldCentroid,
     const std::vector<geometry_msgs::Point>& existingCentroids,
     double threshold = 0.05) {
@@ -732,13 +453,13 @@ ROS_INFO("[Task3] Solving Task 3...");
   quat.setRPY(M_PI, 0, -M_PI / 4);
   geometry_msgs::Pose pose;
   pose.orientation = tf2::toMsg(quat);
-  pose.position.z = 0.85;
+  pose.position.z = 0.75;
 
   // std::vector<double> x_values = {-0.45, -0.25, 0, 0.25, 0.55, 0.55, 0.55, 0.55, 0.25, 0.35, 0.35, -0.35, -0.5, -0.5, -0.35, -0.45, -0.25, 0};
   // std::vector<double> y_values = {-0.4, -0.4, -0.4, -0.4, -0.4, -0.2, 0.2, 0.4, 0.4, 0.2, -0.2, -0.2, -0.2, 0.2, 0.2, 0.4, 0.4, 0.4};
 
-  std::vector<double> x_values = {0.4, 0, -0.4, 0};
-  std::vector<double> y_values = {0, 0.4, 0, -0.4};
+  std::vector<double> x_values = {0.4, 0.4, 0.4, 0, -0.4, -0.4, -0.4, 0};
+  std::vector<double> y_values = {-0.4, 0, 0.4, 0.4, 0.4, 0, -0.4, -0.4};
 
 
   for (size_t i = 0; i < x_values.size(); ++i) {
@@ -748,8 +469,11 @@ ROS_INFO("[Task3] Solving Task 3...");
   }
 
 
-// Iterate over these 18 scan poses.
+// Iterate over all the scan poses.
 for (const auto &scan_pose : scan_poses) {
+
+  static tf2_ros::Buffer tf_buffer;
+  static tf2_ros::TransformListener tf_listener(tf_buffer);
 
      if (robot.moveArm(scan_pose)) {
          ros::Duration(1.0).sleep();
@@ -760,27 +484,22 @@ for (const auto &scan_pose : scan_poses) {
          auto clusters = extractClusters(cloud);
          if (clusters.empty()) continue;
           
-         // For each cluster, extract the largest contour.
-
          for (const auto &cluster : clusters) {
-          // Process each cluster as you would a full cloud.
-          // auto contour = extractContour(cluster);
-          // if (contour.empty()) continue;
-      
-          // float scale, offsetX, offsetY;
-          // cv::Mat img = pointCloudToImage(cluster, 500, 500, scale, offsetX, offsetY);
-          // std::string shape = classifyShape(contour);
+
           std::string shape = classifyShapeFromPointCloud(cluster);
           if (shape == "none") continue;
           // Estimate size and centroid.
           auto sizePair = estimateSize(cluster);
           int estimatedSize = sizePair.first;
+          if (estimatedSize == -1) continue; // Skip if size is unknown.
 
          std::vector<float> centroid = sizePair.second;
+         std::vector<float> transformedCentroid = transformPointCameraToBase(centroid, tf_buffer);
+
           geometry_msgs::Point worldCentroid;
-          worldCentroid.x = centroid[0];
-          worldCentroid.y = centroid[1];
-          worldCentroid.z = centroid[2];
+          worldCentroid.x = transformedCentroid[0];
+          worldCentroid.y = transformedCentroid[1];
+          worldCentroid.z = transformedCentroid[2];
 
          bool isNew = false;
          if (shape == "nought") {  // replaced "square" with "nought"
@@ -796,7 +515,6 @@ for (const auto &scan_pose : scan_poses) {
          if (isNew) {
              count[shape]++;
              shapePointClouds.push_back(cloud);
-             // Removed marker publishing call.
          }
 
          ROS_INFO("Detected shape: %s (size: %d) at (%.2f, %.2f)",
@@ -809,5 +527,7 @@ for (const auto &scan_pose : scan_poses) {
 ROS_INFO("Final Counts - Noughts: %d, Crosses: %d", count["nought"], count["cross"]);
 return true;
 }
+
+
 
 } // namespace task3

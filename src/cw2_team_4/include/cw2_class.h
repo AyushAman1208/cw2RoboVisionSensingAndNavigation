@@ -24,11 +24,14 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_eigen/tf2_eigen.h>
+
 
 // PCL includes
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/common/common.h>
+#include <pcl/common/transforms.h>
 #include <pcl/common/centroid.h>
 #include <pcl/common/pca.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -51,6 +54,7 @@ solution is contained within the cw2_team_<your_team_number> package */
 #include <iostream>
 #include <cmath>
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <algorithm>
 #include <limits>
 #include <utility>
