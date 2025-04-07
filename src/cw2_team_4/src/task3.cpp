@@ -1,362 +1,595 @@
-#include "task3.h"
 #include "cw2_class.h"
-#include <ros/ros.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <opencv2/opencv.hpp>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <visualization_msgs/Marker.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <cmath>
-
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <thread>
-#include <chrono>
+#include "task3.h"
+#include "task1.h"
 
 namespace task3 {
 
-    std::vector<geometry_msgs::Point> worldCentroidsCross;
-    std::vector<geometry_msgs::Point> worldCentroidsSquare;
-    std::map<std::string, int> count;
-    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> shapePointClouds;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr capturePointCloud(ros::NodeHandle &nh) { 
+    ROS_INFO("Waiting for a fresh point cloud...");
 
-    std::string classifyShape(const std::vector<cv::Point> &contour) {
-        if (contour.empty()) {
-            return "none";
-        }
-    
-        std::vector<cv::Point> approx;
-        cv::approxPolyDP(contour, approx, 0.02 * cv::arcLength(contour, true), true);
-    
-        if (approx.size() == 4 && cv::isContourConvex(approx)) {
-            // Check side lengths
-            std::vector<double> sides;
-            for (int i = 0; i < 4; ++i) {
-                cv::Point pt1 = approx[i];
-                cv::Point pt2 = approx[(i + 1) % 4];
-                double length = cv::norm(pt1 - pt2);
-                sides.push_back(length);
-            }
-    
-            double avgSide = (sides[0] + sides[1] + sides[2] + sides[3]) / 4.0;
-            bool sidesEqual = true;
-            for (double side : sides) {
-                if (std::abs(side - avgSide) > 0.2 * avgSide) {  // 20% tolerance
-                    sidesEqual = false;
-                    break;
-                }
-            }
-    
-            // Check angles (near 90°)
-            bool rightAngles = true;
-            for (int i = 0; i < 4; ++i) {
-                cv::Point a = approx[i];
-                cv::Point b = approx[(i + 1) % 4];
-                cv::Point c = approx[(i + 2) % 4];
-    
-                cv::Point ab = b - a;
-                cv::Point bc = c - b;
-    
-                double dot = ab.dot(bc);
-                double mag1 = cv::norm(ab), mag2 = cv::norm(bc);
-                double angle = std::acos(dot / (mag1 * mag2)) * 180.0 / CV_PI;
-                std::cout << angle << std::endl;
-                std::cout<<"Side equal: "<<sidesEqual<<std::endl;
-    
-                if (std::abs(angle - 90) > 20) {  // allow 20° tolerance
-                    rightAngles = false;
-                    break;
-                }
-            }
-    
-            if (sidesEqual && rightAngles) {
-                return "square";
-            }
-        }
-    
-        // Consider "cross" if it is approximately square in bounding box
-        cv::Rect boundingBox = cv::boundingRect(contour);
-        double aspectRatio = static_cast<double>(boundingBox.width) / boundingBox.height;
-        if (aspectRatio > 0.8 && aspectRatio < 1.2) {
-            return "cross";
-        }
-    
-        return "none";
-    }
-    
+    std::string topic = "/r200/camera/depth_registered/points";
+    const double freshnessThreshold = 3.0; // Accept only messages published in the past 10 seconds
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    bool received = false;
 
-    std::string estimateShapeSize(const std::vector<cv::Point> &contour, float scale) {
-        float area = static_cast<float>(cv::contourArea(contour));
-        float realArea = area / (scale * scale);
-
-        if (realArea < 11000) return "20mm";
-        else if (realArea < 22000) return "30mm";
-        else return "40mm";
+    int attempts = 0;
+    const int maxAttempts = 10;
+    while (!received && attempts < maxAttempts) {
+        boost::shared_ptr<const sensor_msgs::PointCloud2> msg =
+            ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic, nh, ros::Duration(5.0));
+        
+        if (msg) {
+            double age = (ros::Time::now() - msg->header.stamp).toSec();
+            if (age <= freshnessThreshold) {
+                pcl::fromROSMsg(*msg, *cloud);
+                ROS_INFO("Fresh point cloud received from %s with %lu points (age: %.2f sec)",
+                          topic.c_str(), cloud->points.size(), age);
+                received = true;
+                break;
+            } else {
+                ROS_WARN("Point cloud from %s is too old (%.2f sec); retrying...", topic.c_str(), age);
+            }
+        } else {
+            ROS_WARN("No point cloud received from %s; retrying...", topic.c_str());
+        }
+        attempts++;
+        ros::Duration(1.0).sleep();
     }
 
-    cv::Mat pointCloudToImage(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud,
-        int imageWidth, int imageHeight,
-        float &scale, float &offsetX, float &offsetY) {
+    if (!received) {
+        ROS_ERROR("Failed to receive a fresh point cloud after %d attempts.", attempts);
+        return nullptr;
+    }
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
+    const int green_threshold = 50;
+    // const int threshold = 100; // Adjust based on your sensor's scaling.
+    for (const auto &pt : cloud->points) {
+        if (pt.g < green_threshold) {  
+            filtered_cloud->push_back(pt);
+        }
+    }
+
+
+  if (filtered_cloud->empty()) {
+      ROS_WARN("Color filtering removed all points; using original cloud.");
+      return cloud;
+  } else {
+      ROS_INFO("After color filtering, %lu points remain.", filtered_cloud->points.size());
+      return filtered_cloud;
+  }
+  }
+
+    // Extract clusters from a point cloud and filter clusters based on size.
+// Only clusters with maximum dimension (x or y) between 0.08 m and 0.22 m are returned.
+std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> extractClusters(
+  const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud)
+{
+  // Create a KdTree for clustering.
+  pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
+  tree->setInputCloud(cloud);
+
+  // Perform Euclidean Cluster Extraction.
+  std::vector<pcl::PointIndices> clusterIndices;
+  pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
+  ec.setClusterTolerance(0.02f); // 2 cm tolerance (adjust based on your data density)
+  ec.setMinClusterSize(50);      // minimum number of points in a cluster
+  ec.setMaxClusterSize(25000);   // maximum number of points in a cluster
+  ec.setSearchMethod(tree);
+  ec.setInputCloud(cloud);
+  ec.extract(clusterIndices);
+
+  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters;
+  for (const auto &indices : clusterIndices)
+  {
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
+      for (const auto &idx : indices.indices)
+      {
+          cluster->points.push_back(cloud->points[idx]);
+      }
+      cluster->width = cluster->points.size();
+      cluster->height = 1;
+      cluster->is_dense = true;
+
+      // Compute the bounding box (x-y only) for the cluster.
       float minX = std::numeric_limits<float>::max();
       float maxX = -std::numeric_limits<float>::max();
       float minY = std::numeric_limits<float>::max();
       float maxY = -std::numeric_limits<float>::max();
-
-      for (const auto &pt : cloud->points) {
+      for (const auto &pt : cluster->points)
+      {
           if (pt.x < minX) minX = pt.x;
           if (pt.x > maxX) maxX = pt.x;
           if (pt.y < minY) minY = pt.y;
           if (pt.y > maxY) maxY = pt.y;
       }
+      float clusterWidth  = maxX - minX;
+      float clusterHeight = maxY - minY;
+      float clusterSize   = std::max(clusterWidth, clusterHeight);
 
-      float rangeX = maxX - minX;
-      float rangeY = maxY - minY;
-      scale = std::min(imageWidth / rangeX, imageHeight / rangeY) * 0.8;
+      // Filter clusters to those within the tolerance: 80 mm to 220 mm.
+      if (clusterSize >= 0.08f && clusterSize <= 0.22f)
+      {
+          clusters.push_back(cluster);
+      }
+  }
+  return clusters;
+}
 
-      offsetX = -minX * scale;
-      offsetY = -minY * scale;
 
-      cv::Mat image = cv::Mat::zeros(imageHeight, imageWidth, CV_8UC1);
-      for (const auto &pt : cloud->points) {
-          int x = static_cast<int>(pt.x * scale + offsetX);
-          int y = static_cast<int>(pt.y * scale + offsetY);
-          if (x >= 0 && x < imageWidth && y >= 0 && y < imageHeight) {
-              image.at<uchar>(y, x) = 255;
+std::string classifyShapeFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
+  if (cloud->empty()) {
+      return "none";
+  }
+
+  // Step 1: Find the centroid of the point cloud
+  Eigen::Vector4f centroid;
+  pcl::compute3DCentroid(*cloud, centroid);
+  
+  // Step 2: Find the 2D bounding box (assuming points are generally on a plane)
+  float minX = std::numeric_limits<float>::max();
+  float minY = std::numeric_limits<float>::max();
+  float maxX = -std::numeric_limits<float>::max();
+  float maxY = -std::numeric_limits<float>::max();
+  
+  for (const auto& point : cloud->points) {
+      minX = std::min(minX, point.x);
+      minY = std::min(minY, point.y);
+      maxX = std::max(maxX, point.x);
+      maxY = std::max(maxY, point.y);
+  }
+  
+  float width = maxX - minX;
+  float height = maxY - minY;
+  float aspectRatio = width / height;
+  
+  // Step 3: Create a 2D grid to represent the point distribution
+  const int gridSize = 20; // Adjust based on point cloud density
+  std::vector<std::vector<bool>> occupancyGrid(gridSize, std::vector<bool>(gridSize, false));
+  
+  // Fill the grid based on point presence
+  for (const auto& point : cloud->points) {
+      int gridX = static_cast<int>((point.x - minX) / width * (gridSize - 1));
+      int gridY = static_cast<int>((point.y - minY) / height * (gridSize - 1));
+      
+      // Bound checking
+      gridX = std::max(0, std::min(gridSize - 1, gridX));
+      gridY = std::max(0, std::min(gridSize - 1, gridY));
+      
+      occupancyGrid[gridY][gridX] = true;
+  }
+  
+  // Step 4: Analyze the grid for shape characteristics
+  // Count occupied cells
+  int occupiedCells = 0;
+  for (const auto& row : occupancyGrid) {
+      for (bool cell : row) {
+          if (cell) occupiedCells++;
+      }
+  }
+  
+  // Calculate density (percentage of grid filled)
+  float density = static_cast<float>(occupiedCells) / (gridSize * gridSize);
+  
+  // Step 5: Check for empty center (for nought detection)
+  // Get center region of the grid
+  int centerStartX = gridSize / 4;
+  int centerEndX = (gridSize * 3) / 4;
+  int centerStartY = gridSize / 4;
+  int centerEndY = (gridSize * 3) / 4;
+  
+  int centerCells = 0;
+  int centerOccupied = 0;
+  
+  for (int y = centerStartY; y < centerEndY; y++) {
+      for (int x = centerStartX; x < centerEndX; x++) {
+          centerCells++;
+          if (occupancyGrid[y][x]) centerOccupied++;
+      }
+  }
+  
+  float centerDensity = static_cast<float>(centerOccupied) / centerCells;
+  
+  // Step 6: Check for cross pattern using radial density analysis
+  
+     // Define regions (in grid coordinates)
+     struct Region {
+      int startX, startY, endX, endY;
+  };
+  
+  // Define the four "arms" regions of a potential cross
+  Region leftArm = {0, gridSize/3, gridSize/3, (2*gridSize)/3};
+  Region rightArm = {(2*gridSize)/3, gridSize/3, gridSize, (2*gridSize)/3};
+  Region topArm = {gridSize/3, 0, (2*gridSize)/3, gridSize/3};
+  Region bottomArm = {gridSize/3, (2*gridSize)/3, (2*gridSize)/3, gridSize};
+  
+  // Define corners
+  Region topLeft = {0, 0, gridSize/3, gridSize/3};
+  Region topRight = {(2*gridSize)/3, 0, gridSize, gridSize/3};
+  Region bottomLeft = {0, (2*gridSize)/3, gridSize/3, gridSize};
+  Region bottomRight = {(2*gridSize)/3, (2*gridSize)/3, gridSize, gridSize};
+  
+  auto calculateRegionDensity = [&occupancyGrid](const Region& r) -> float {
+      int cells = 0;
+      int occupied = 0;
+      for (int y = r.startY; y < r.endY; y++) {
+          for (int x = r.startX; x < r.endX; x++) {
+              cells++;
+              if (occupancyGrid[y][x]) occupied++;
           }
       }
-      return image;
-    }
+      return cells > 0 ? static_cast<float>(occupied) / cells : 0;
+  };
+  
+  float leftDensity = calculateRegionDensity(leftArm);
+  float rightDensity = calculateRegionDensity(rightArm);
+  float topDensity = calculateRegionDensity(topArm);
+  float bottomDensity = calculateRegionDensity(bottomArm);
+  
+  float topLeftDensity = calculateRegionDensity(topLeft);
+  float topRightDensity = calculateRegionDensity(topRight);
+  float bottomLeftDensity = calculateRegionDensity(bottomLeft);
+  float bottomRightDensity = calculateRegionDensity(bottomRight);
+  
+  // Average arm density and corner density
+  float armsDensity = (leftDensity + rightDensity + topDensity + bottomDensity) / 4.0;
+  float cornersDensity = (topLeftDensity + topRightDensity + bottomLeftDensity + bottomRightDensity) / 4.0;
+  
+  // Step 7: Calculate radial density (rings around center)
+  std::vector<float> ringDensities;
+  const int numRings = 5;
+  
+  for (int ring = 0; ring < numRings; ring++) {
+      float innerRadiusRatio = static_cast<float>(ring) / numRings;
+      float outerRadiusRatio = static_cast<float>(ring + 1) / numRings;
+      
+      int pointsInRing = 0;
+      int totalPointsChecked = 0;
+      
+      for (const auto& point : cloud->points) {
+          // Calculate normalized distance from centroid (0-1 range)
+          float dx = (point.x - centroid[0]) / (width/2);
+          float dy = (point.y - centroid[1]) / (height/2);
+          float normalizedDist = std::sqrt(dx*dx + dy*dy);
+          
+          if (normalizedDist >= innerRadiusRatio && normalizedDist < outerRadiusRatio) {
+              totalPointsChecked++;
+              pointsInRing++;
+          }
+      }
+      
+      // Avoid division by zero
+      float ringDensity = totalPointsChecked > 0 ? 
+          static_cast<float>(pointsInRing) / totalPointsChecked : 0.0f;
+      
+      ringDensities.push_back(ringDensity);
+  }
+  
+  // Debug output
+  ROS_INFO("Shape metrics:");
+  ROS_INFO("  Total points: %lu", cloud->points.size());
+  ROS_INFO("  Overall density: %.2f", density);
+  ROS_INFO("  Center density: %.2f", centerDensity);
+  ROS_INFO("  Arms density: %.2f", armsDensity);
+  ROS_INFO("  Corners density: %.2f", cornersDensity);
+  ROS_INFO("  Aspect ratio: %.2f", aspectRatio);
+  ROS_INFO("  Ring densities: [%.2f, %.2f, %.2f, %.2f, %.2f]", 
+           ringDensities[0], ringDensities[1], ringDensities[2], 
+           ringDensities[3], ringDensities[4]);
+  
+  // OPTIMIZED CLASSIFICATION LOGIC BASED ON THE PROVIDED METRICS
+  
+  // ------ NOUGHT DETECTION -------
+  bool isNought = centerDensity < 0.20 &&                 // Empty center
+                  density > 0.40 &&                       // Substantial overall density
+                  cornersDensity > 0.40 &&                // Corners are filled
+                  aspectRatio > 0.8 && aspectRatio < 1.2; // Square-ish shape
+  
+  // Additional check for ring pattern typical for noughts
+  if (ringDensities.size() >= 3) {
+      // First two rings should be near empty, outer rings filled
+      if (ringDensities[0] < 0.30 && ringDensities[1] < 0.30 && 
+          ringDensities[3] > 0.70 && ringDensities[4] > 0.70) {
+          isNought = isNought && true;
+      } else {
+          isNought = false;
+      }
+  }
+  
+  // ------ CROSS DETECTION -------
+  bool isCross = centerDensity > 0.50 &&                  // Filled center
+                 cornersDensity < 0.30 &&                 // Empty corners
+                 armsDensity > 0.50 &&                    // Substantial arm density
+                 aspectRatio > 0.8 && aspectRatio < 1.2;  // Square-ish shape
+  
+  // Check for uniform ring density (characteristic of crosses)
+  if (ringDensities.size() >= 3) {
+      float ringSum = 0;
+      float ringVar = 0;
+      
+      // Calculate mean
+      for (float density : ringDensities) {
+          ringSum += density;
+      }
+      float ringMean = ringSum / ringDensities.size();
+      
+      // Calculate variance
+      for (float density : ringDensities) {
+          ringVar += (density - ringMean) * (density - ringMean);
+      }
+      ringVar /= ringDensities.size();
+      
+      // Low variance indicates uniform density across rings (cross)
+      // High variance indicates non-uniform density (nought)
+      if (ringVar < 0.05 && ringMean > 0.70) {
+          isCross = isCross && true;
+      }
+  }
+    // ------ BASKET DETECTION -------
+  // Compute 3D bounds (x, y, z)
+  float minZ = std::numeric_limits<float>::max();
+  float maxZ = -std::numeric_limits<float>::max();
 
-    cv::Point2f computeCentroid(const std::vector<cv::Point> &contour) {
-        cv::Moments moments = cv::moments(contour, false);
-        return cv::Point2f(moments.m10 / moments.m00, moments.m01 / moments.m00);
-    }
+  for (const auto& point : cloud->points) {
+      minZ = std::min(minZ, point.z);
+      maxZ = std::max(maxZ, point.z);
+  }
 
-    bool isNewCentroid(const geometry_msgs::Point &worldCentroid, const std::vector<geometry_msgs::Point>& existingCentroids, double threshold = 0.05) {
-        for (const auto &existing : existingCentroids) {
-            double dx = worldCentroid.x - existing.x;
-            double dy = worldCentroid.y - existing.y;
-            double dz = worldCentroid.z - existing.z;
-            double distance = std::sqrt(dx * dx + dy * dy + dz * dz);
-            if (distance < threshold) {
-                return false;
-            }
-        }
-        return true;
-    }
+  float objectHeight = maxZ - minZ;
+  float diagonal = std::sqrt(width * width + height * height);
 
+  bool isBasket = 
+      diagonal > 0.30 && diagonal < 0.40 &&             // Roughly matches 0.35m side length
+      objectHeight > 0.03 && objectHeight < 0.07 &&     // Roughly matches 0.05m height
+      density > 0.30 &&                                 // Decent point density
+      aspectRatio > 0.8 && aspectRatio < 1.2;           // Appears roughly square from top
+
+  if (isBasket) {
+    return "basket";
+  }
+  
+  // Make the final classification
+  if (isNought) {
+      return "nought";
+  } 
+  else if (isCross) {
+      return "cross";
+  }
+  
+  return "none";
+}
 
     
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr capturePointCloud(ros::NodeHandle &nh) { 
-        ROS_INFO("Waiting for a fresh point cloud...");
+  std::pair<int, std::vector<float>> estimateSize(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
+    float minX = std::numeric_limits<float>::max();
+    float maxX = -std::numeric_limits<float>::max();
+    float minY = std::numeric_limits<float>::max();
+    float maxY = -std::numeric_limits<float>::max();
+    float sumX = 0.0f, sumY = 0.0f, sumZ = 0.0f;
+    int count = 0;
 
-        std::string topic = "/r200/camera/depth_registered/points";
-        const double freshnessThreshold = 3.0;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-        bool received = false;
-
-        int attempts = 0;
-        const int maxAttempts = 10;
-        while (!received && attempts < maxAttempts) {
-            auto msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic, nh, ros::Duration(5.0));
-            if (msg) {
-                double age = (ros::Time::now() - msg->header.stamp).toSec();
-                if (age <= freshnessThreshold) {
-                    pcl::fromROSMsg(*msg, *cloud);
-                    ROS_INFO("Fresh point cloud received from %s with %lu points (age: %.2f sec)",
-                             topic.c_str(), cloud->points.size(), age);
-                    received = true;
-                    break;
-                } else {
-                    ROS_WARN("Point cloud from %s is too old (%.2f sec); retrying...", topic.c_str(), age);
-                }
-            } else {
-                ROS_WARN("No point cloud received from %s; retrying...", topic.c_str());
-            }
-            attempts++;
-            ros::Duration(1.0).sleep();
-        }
-
-        if (!received) {
-            ROS_ERROR("Failed to receive a fresh point cloud after %d attempts.", attempts);
-            return nullptr;
-        }
-
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
-        for (const auto& point : cloud->points) {
-            int r = static_cast<int>(point.r);
-            int g = static_cast<int>(point.g);
-            int b = static_cast<int>(point.b);
-    
-            // Check if the point color matches one of the three target colors
-            if ((r == 26 && g == 26 && b == 204) ||   // Blue
-                (r == 204 && g == 26 && b == 204) ||  // Magenta (Purple-Pink)
-                (r == 204 && g == 26 && b == 26)) {   // Red
-                filtered_cloud->points.push_back(point);
-            }
-        }
-
-        filtered_cloud->width = filtered_cloud->points.size();
-        filtered_cloud->height = 1;
-        filtered_cloud->is_dense = true;
-
-        // Replace the original cloud with the filtered cloud
-        cloud->swap(*filtered_cloud);
-
-    if (filtered_cloud->empty()) {
-        ROS_WARN("Color filtering removed all points; using original cloud.");
-        return cloud;
-    } else {
-        ROS_INFO("After color filtering, %lu points remain.", filtered_cloud->points.size());
-        return filtered_cloud;
+    // Compute bounding box (x-y only) and sums for centroid calculation.
+    for (const auto &pt : cloud->points) {
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.y > maxY) maxY = pt.y;
+        
+        sumX += pt.x;
+        sumY += pt.y;
+        sumZ += pt.z;
+        ++count;
     }
+    
+    // Compute the centroid as the average of all points.
+    std::vector<float> centroid(3, 0.0f);
+    if (count > 0) {
+        centroid[0] = sumX / count;
+        centroid[1] = sumY / count;
+        centroid[2] = sumZ / count;
+    }
+    
+    float rangeX = maxX - minX;
+    float rangeY = maxY - minY;
+    
+    int size = -1; // Default: unknown size
+    // Use proper chained comparisons in C++
+    if (rangeX >= 0.08f && rangeX <= 0.12f && rangeY >= 0.08f && rangeY <= 0.12f) {
+        size = 20;
+    } else if (rangeX > 0.13f && rangeX <= 0.17f && rangeY > 0.13f && rangeY <= 0.17f) {
+        size = 30;
+    } else if (rangeX > 0.18f && rangeX <= 0.22f && rangeY > 0.18f && rangeY <= 0.22f) {
+        size = 40;
+    }
+    
+    return std::make_pair(size, centroid);
+}
+
+// Function to transform point from camera frame to base frame
+std::vector<float> transformPointCameraToBase(
+  const std::vector<float>& point_camera_frame,
+  tf2_ros::Buffer& tf_buffer) {
+  
+  try {
+      // Get the transform from camera frame to base frame
+      // Note: We need to transform FROM camera TO base
+      geometry_msgs::TransformStamped transform_stamped = 
+          tf_buffer.lookupTransform("panda_link0", "depth", 
+                                   ros::Time(0), ros::Duration(1.0));
+      
+      // Create a point in geometry_msgs format
+      geometry_msgs::PointStamped point_cam;
+      point_cam.header.frame_id = "depth";
+      point_cam.header.stamp = ros::Time(0);
+      point_cam.point.x = point_camera_frame[0];
+      point_cam.point.y = point_camera_frame[1];
+      point_cam.point.z = point_camera_frame[2];
+      
+      // Transform the point
+      geometry_msgs::PointStamped point_base;
+      tf2::doTransform(point_cam, point_base, transform_stamped);
+      
+      // Return as vector
+      return {static_cast<float>(point_base.point.x),
+              static_cast<float>(point_base.point.y),
+              static_cast<float>(point_base.point.z)};
+  }
+  catch (tf2::TransformException &ex) {
+      ROS_ERROR("Failed to transform point from camera to base: %s", ex.what());
+      // Return original point as fallback
+      return point_camera_frame;
+  }
+}
+
+  bool isNewCentroid(const geometry_msgs::Point &worldCentroid,
+    const std::vector<geometry_msgs::Point>& existingCentroids,
+    double threshold = 0.05) {
+    double thresholdSquared = threshold * threshold;
+    for (const auto &existing : existingCentroids) {
+      double dx = worldCentroid.x - existing.x;
+      double dy = worldCentroid.y - existing.y;
+      double dz = worldCentroid.z - existing.z;
+      double distanceSquared = dx * dx + dy * dy + dz * dz;
+    if (distanceSquared < thresholdSquared) {
+      return false;
+    }
+    }
+    return true;
+  }
+
+
+geometry_msgs::PointStamped convertToPointStamped(const geometry_msgs::Point& point) {
+    geometry_msgs::PointStamped pointStamped;
+    
+    pointStamped.header.stamp = ros::Time::now();  // Set the timestamp to the current time
+    // pointStamped.header.frame_id = frame_id;  // Set the frame_id to the provided frame (e.g., "world")
+
+    pointStamped.point = point;  // Assign the Point to PointStamped
+
+    return pointStamped;
+}
+
+// geometry_msgs::Pose convertPointToPose(geometry_msgs::Point& point) {
+//     geometry_msgs::Pose pose;
+//     pose.position.x = point.x;
+//     pose.position.y = point.y;
+//     pose.position.z = point.z;
+
+//     // Assuming no specific orientation needed, set it to identity (no rotation)
+//     pose.orientation.x = 0.0;
+//     pose.orientation.y = 0.0;
+//     pose.orientation.z = 0.0;
+//     pose.orientation.w = 1.0;
+
+//     return pose;
+// }
+
+
+  bool solve(const cw2_world_spawner::Task3Service::Request &req,
+    cw2_world_spawner::Task3Service::Response &res,
+    cw2 &robot, ros::NodeHandle &nh) {
+ROS_INFO("[Task3] Solving Task 3...");
+
+  // Declare containers for storing centroids, counts, and clouds.
+  std::vector<geometry_msgs::Point> worldCentroidsNought;
+  std::vector<geometry_msgs::Point> worldCentroidsCross;
+  std::map<std::string, int> count;
+  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> shapePointClouds;
+
+  // Create a vector to hold the scan poses.
+  std::vector<geometry_msgs::Pose> scan_poses;
+
+
+  geometry_msgs::Point basket;
+
+  // Set up the common orientation and z-height.
+  tf2::Quaternion quat;
+  quat.setRPY(M_PI, 0, -M_PI / 4);
+  geometry_msgs::Pose pose;
+  pose.orientation = tf2::toMsg(quat);
+  pose.position.z = 0.75;
+
+  // std::vector<double> x_values = {-0.45, -0.25, 0, 0.25, 0.55, 0.55, 0.55, 0.55, 0.25, 0.35, 0.35, -0.35, -0.5, -0.5, -0.35, -0.45, -0.25, 0};
+  // std::vector<double> y_values = {-0.4, -0.4, -0.4, -0.4, -0.4, -0.2, 0.2, 0.4, 0.4, 0.2, -0.2, -0.2, -0.2, 0.2, 0.2, 0.4, 0.4, 0.4};
+
+  std::vector<double> x_values = {0.4, 0.4, 0.4, 0, -0.4, -0.4, -0.4, 0};
+  std::vector<double> y_values = {-0.4, 0, 0.4, 0.4, 0.4, 0, -0.4, -0.4};
+
+
+  for (size_t i = 0; i < x_values.size(); ++i) {
+          pose.position.x = x_values[i];
+          pose.position.y = y_values[i];
+          scan_poses.push_back(pose);
+  }
+
+  
+
+
+// Iterate over all the scan poses.
+for (const auto &scan_pose : scan_poses) {
+
+  static tf2_ros::Buffer tf_buffer;
+  static tf2_ros::TransformListener tf_listener(tf_buffer);
+
+     if (robot.moveArm(scan_pose)) {
+         ros::Duration(1.0).sleep();
+
+         auto cloud = capturePointCloud(nh);
+         if (!cloud || cloud->empty()) continue;
+
+         auto clusters = extractClusters(cloud);
+         if (clusters.empty()) continue;
+          
+         for (const auto &cluster : clusters) {
+
+          std::string shape = classifyShapeFromPointCloud(cluster);
+          if (shape == "none") continue;
+          // Estimate size and centroid.
+          auto sizePair = estimateSize(cluster);
+          int estimatedSize = sizePair.first;
+          if (estimatedSize == -1) continue; // Skip if size is unknown.
+
+         std::vector<float> centroid = sizePair.second;
+         std::vector<float> transformedCentroid = transformPointCameraToBase(centroid, tf_buffer);
+
+          geometry_msgs::Point worldCentroid;
+          worldCentroid.x = transformedCentroid[0];
+          worldCentroid.y = transformedCentroid[1];
+          worldCentroid.z = transformedCentroid[2];
+
+         bool isNew = false;
+         if (shape == "nought") {  // replaced "square" with "nought"
+             isNew = isNewCentroid(worldCentroid, worldCentroidsNought);
+             if (isNew)
+                 worldCentroidsNought.push_back(worldCentroid);
+         } else if (shape == "cross") {
+             isNew = isNewCentroid(worldCentroid, worldCentroidsCross);
+             if (isNew)
+                 worldCentroidsCross.push_back(worldCentroid);
+         }else if(shape == "basket"){
+             basket.x = scan_pose.position.x;
+             basket.y = scan_pose.position.y;
+         }
+
+         if (isNew) {
+             count[shape]++;
+             shapePointClouds.push_back(cloud);
+         }
+
+         ROS_INFO("Detected shape: %s (size: %d) at (%.2f, %.2f)",
+                  shape.c_str(), estimatedSize, worldCentroid.x, worldCentroid.y);
+     }
+
+ }
+}
+std::cout<<"Basket location:  "<<basket<<std::endl;
+ROS_INFO("Final Counts - Noughts: %d, Crosses: %d", count["nought"], count["cross"]);
+bool shapePicked = count["nought"] >count["cross"]?task1::solve(convertToPointStamped(worldCentroidsNought.at(0)),convertToPointStamped(basket),"nought",robot,nh,"t3"):task1::solve(convertToPointStamped(worldCentroidsCross.at(0)),convertToPointStamped(basket),"cross",robot,nh,"t3");
+
+
+return true;
 }
 
 
-    
 
-    void publishMarker(const geometry_msgs::Point& position, const std::string& id_str, const std::string& shape, ros::Publisher& marker_pub) {
-        visualization_msgs::Marker marker;
-        marker.header.frame_id = "base_link";
-        marker.header.stamp = ros::Time::now();
-        marker.ns = shape;
-        marker.id = std::hash<std::string>()(id_str) % 10000;
-        marker.type = visualization_msgs::Marker::SPHERE;
-        marker.action = visualization_msgs::Marker::ADD;
-        marker.pose.position = position;
-        marker.pose.orientation.w = 1.0;
-        marker.scale.x = 0.03;
-        marker.scale.y = 0.03;
-        marker.scale.z = 0.03;
-
-        if (shape == "square") {
-            marker.color.r = 1.0;
-            marker.color.g = 0.0;
-            marker.color.b = 0.0;
-        } else {
-            marker.color.r = 0.0;
-            marker.color.g = 1.0;
-            marker.color.b = 0.0;
-        }
-        marker.color.a = 1.0;
-
-        marker.lifetime = ros::Duration();
-        marker_pub.publish(marker);
-    }
-    std::vector<cv::Point> extractContour(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
-        // Convert the point cloud to an image
-        float scale, offsetX, offsetY;
-        cv::Mat img = pointCloudToImage(cloud, 500, 500, scale, offsetX, offsetY);
-        
-        // Apply Gaussian blur to smooth the image
-        cv::GaussianBlur(img, img, cv::Size(5, 5), 0);
-        
-        // Perform edge detection using Canny
-        cv::Mat edges;
-        cv::Canny(img, edges, 50, 150);
-    
-        // Find contours in the edge-detected image
-        std::vector<std::vector<cv::Point>> contours;
-        cv::findContours(edges, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-    
-        // If no contours found, return empty
-        if (contours.empty()) return {};
-    
-        // Find the contour with the largest area
-        double maxArea = 0;
-        int maxIdx = 0;
-        for (size_t i = 0; i < contours.size(); i++) {
-            double area = cv::contourArea(contours[i]);
-            if (area > maxArea) {
-                maxArea = area;
-                maxIdx = i;
-            }
-        }
-    
-        // Create a copy of the original image to draw contours
-        cv::Mat img_copy = img.clone();
-        
-        // Draw the contours on the image
-        cv::drawContours(img_copy, contours, maxIdx, cv::Scalar(0, 255, 0), 2);
-    
-        //Display the image with contours
-        cv::imshow("Contour Visualization", img_copy);
-        cv::waitKey(0);  // Wait for a key press to close the window
-        
-        // Return the contour with the largest area
-        return contours[maxIdx];
-    }
-    
-    bool solve(const cw2_world_spawner::Task3Service::Request &req,
-               cw2_world_spawner::Task3Service::Response &res, cw2& robot, ros::NodeHandle &nh) {
-        ROS_INFO("[Task3] Solving Task 3...");
-
-        ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-
-        double x_min = -0.6, x_max = 0.7;
-        double y_min = -0.55, y_max = 0.55;
-        double step_size = 0.3;
-
-        geometry_msgs::Pose scan_pose;
-        scan_pose.orientation.w = 1.0;
-        scan_pose.position.z = 0.6;
-        tf2::Quaternion quat;
-        quat.setRPY(M_PI, 0, -M_PI / 4);
-        scan_pose.orientation = tf2::toMsg(quat);
-
-        for (double y = y_min; y <= y_max; y += step_size) {
-            for (double x = x_min; x <= x_max; x += step_size) {
-                scan_pose.position.x = x;
-                scan_pose.position.y = y;
-
-                if (robot.moveArm(scan_pose)) {
-                    ros::Duration(1.0).sleep();
-
-                    auto cloud = capturePointCloud(nh);
-                    if (!cloud || cloud->empty()) continue;
-
-                    auto contour = extractContour(cloud);
-                    if (contour.empty()) continue;
-
-                    
-
-                    float scale, offsetX, offsetY;
-                    cv::Mat img = pointCloudToImage(cloud, 500, 500, scale, offsetX, offsetY);
-                    std::string shape = classifyShape(contour);
-                    std::string size = estimateShapeSize(contour, scale);
-                    cv::Point2f centroid = computeCentroid(contour);
-
-                    pcl::PointXYZRGB referencePoint = cloud->points[0];
-                    geometry_msgs::Point worldCentroid;
-                    worldCentroid.x = referencePoint.x;
-                    worldCentroid.y = referencePoint.y;
-                    worldCentroid.z = referencePoint.z;
-
-                    bool isNew = false;
-                    if (shape == "square") {
-                        isNew = isNewCentroid(worldCentroid, worldCentroidsSquare);
-                        if (isNew) worldCentroidsSquare.push_back(worldCentroid);
-                    } else if (shape == "cross") {
-                        isNew = isNewCentroid(worldCentroid, worldCentroidsCross);
-                        if (isNew) worldCentroidsCross.push_back(worldCentroid);
-                    }
-
-                    if (isNew) {
-                        count[shape]++;
-                        shapePointClouds.push_back(cloud);
-                        publishMarker(worldCentroid, shape + std::to_string(count[shape]), shape, marker_pub);
-                    }
-
-                    ROS_INFO("Detected shape: %s (%s) at (%.2f, %.2f)", shape.c_str(), size.c_str(), centroid.x, centroid.y);
-                }
-            }
-        }
-
-        ROS_INFO("Final Counts - Squares: %d, Crosses: %d", count["square"], count["cross"]);
-        return true;
-    }
-}
+} // namespace task3

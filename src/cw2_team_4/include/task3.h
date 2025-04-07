@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cw2_world_spawner/Task3Service.h>
+#include "task1.h"
 
 #include "cw2_class.h"
 #include <ros/ros.h>

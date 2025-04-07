@@ -8,6 +8,6 @@
 
 namespace task1 {
 
-  bool solve(const cw2_world_spawner::Task1Service::Request &req,
-             cw2_world_spawner::Task1Service::Response &res, cw2 &robot, ros::NodeHandle &nh);
+  bool solve(geometry_msgs::PointStamped object_point,geometry_msgs::PointStamped goal_point, std::string shape_type,
+    cw2 &robot, ros::NodeHandle &nh,std::string currTask);
 }

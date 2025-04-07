@@ -219,8 +219,8 @@ ROS_INFO("Final computed angle: %f degrees", finalAngleDegrees);
 return angleRad;
 }
 
-  bool solve(const cw2_world_spawner::Task1Service::Request &req,
-             cw2_world_spawner::Task1Service::Response &res, cw2 &robot, ros::NodeHandle &nh)
+  bool solve(geometry_msgs::PointStamped object_point,geometry_msgs::PointStamped goal_point, std::string shape_type,
+              cw2 &robot, ros::NodeHandle &nh,std::string currTask="t1")
   {
     ROS_INFO("[Task1] Solving Task 1...");
 
@@ -245,10 +245,10 @@ return angleRad;
       return false;
     }
 
-    // Extract the object and goal points, and the shape type from the service request.
-    geometry_msgs::PointStamped object_point = req.object_point;
-    geometry_msgs::PointStamped goal_point   = req.goal_point;
-    std::string shape_type = req.shape_type;
+    // // Extract the object and goal points, and the shape type from the service request.
+    // geometry_msgs::PointStamped object_point = req.object_point;
+    // geometry_msgs::PointStamped goal_point   = req.goal_point;
+    // std::string shape_type = req.shape_type;
 
     // Move the robot arm to the object point.
     geometry_msgs::Pose observe_pose;
@@ -309,6 +309,9 @@ return angleRad;
     object_pose.position.z += 0.035;
     // Adjust the x and y positions based on the shape type and rotation angle.
     // This was determined by calculating the expected angles and the distances that the arm should move to be perpendicular to the object.
+    if(currTask == "t3"){
+      object_pose.position.z = 0;
+    }
     
     if (shape_type == "nought") {
       if (rotation_angle > 0){
@@ -358,7 +361,10 @@ return angleRad;
     cv::destroyAllWindows();
     cloud->clear();
 
+    if(currTask == "t1"){
+
     ROS_INFO("Task 1 completed successfully");
+    }
     return true;
   }
 

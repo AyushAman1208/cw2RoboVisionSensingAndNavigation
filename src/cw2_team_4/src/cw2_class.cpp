@@ -31,9 +31,12 @@ cw2::t1_callback(cw2_world_spawner::Task1Service::Request &request,
   cw2_world_spawner::Task1Service::Response &response) 
 {
     /* function which should solve task 1 */
+    geometry_msgs::PointStamped object_point = request.object_point;
+    geometry_msgs::PointStamped goal_point   = request.goal_point;
+    std::string shape_type = request.shape_type;
 
   ROS_INFO("The coursework solving callback for task 1 has been triggered");
-  return task1::solve(request, response, *this, nh_);
+  return task1::solve(object_point, goal_point, shape_type, *this, nh_,"t1");
 
   return true;
 }
