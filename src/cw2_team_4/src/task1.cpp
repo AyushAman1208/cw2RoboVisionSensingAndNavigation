@@ -219,6 +219,32 @@ ROS_INFO("Final computed angle: %f degrees", finalAngleDegrees);
 return angleRad;
 }
 
+std::vector<float> determinePickOffset(const std::string &shapeType, int size, float rotation_angle) {
+  // Convert size from mm to meters.
+  float object_size = size * 0.001f;
+  float x = 0.0f, y = 0.0f; // Declare variables
+
+  if (shapeType == "nought") {
+      if (rotation_angle > 0) {
+          x = 2 * object_size * sin(rotation_angle + M_PI / 4);
+          y = -2 * object_size * cos(rotation_angle + M_PI / 4);
+      } else {  // rotation_angle <= 0
+          x = -2 * object_size * sin(rotation_angle + M_PI / 4);
+          y = 2 * object_size * cos(rotation_angle + M_PI / 4);
+      }
+  } else if (shapeType == "cross") {
+      x = 2 * object_size * cos(rotation_angle + M_PI / 4);
+      y = 2 * object_size * sin(rotation_angle + M_PI / 4);
+  } else {
+      // Optionally handle unexpected shapeType.
+      x = 0.0f;
+      y = 0.0f;
+  }
+  
+  return { x, y };
+}
+
+
   bool solve(const cw2_world_spawner::Task1Service::Request &req,
              cw2_world_spawner::Task1Service::Response &res, cw2 &robot, ros::NodeHandle &nh)
   {
@@ -309,20 +335,15 @@ return angleRad;
     object_pose.position.z += 0.035;
     // Adjust the x and y positions based on the shape type and rotation angle.
     // This was determined by calculating the expected angles and the distances that the arm should move to be perpendicular to the object.
+
+    float x_offset, y_offset;
+    float size = 40; // Default size, can be adjusted based on the shape type.
+    std::vector<float> offsets = determinePickOffset(shape_type, size, rotation_angle);
+    x_offset = offsets[0];
+    y_offset = offsets[1];
+    object_pose.position.x += x_offset;
+    object_pose.position.y += y_offset;
     
-    if (shape_type == "nought") {
-      if (rotation_angle > 0){
-        object_pose.position.x += 0.08 * sin(rotation_angle + M_PI / 4);
-        object_pose.position.y -= 0.08 * cos(rotation_angle + M_PI / 4);
-      }
-      else if (rotation_angle <= 0){
-          object_pose.position.x -= 0.08 * sin(rotation_angle + M_PI / 4);
-          object_pose.position.y += 0.08 * cos(rotation_angle + M_PI / 4);
-      }
-    } else if (shape_type == "cross") {
-      object_pose.position.x += 0.08 * cos(rotation_angle + M_PI / 4);
-      object_pose.position.y += 0.08 * sin(rotation_angle + M_PI / 4);
-    }
     
     // Attempt to pick up the object.
     if (!robot.pick(object_pose)) {

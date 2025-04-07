@@ -1,5 +1,6 @@
 #include "cw2_class.h"
 #include "task3.h"
+#include "task1.h"
 
 namespace task3 {
 
@@ -41,13 +42,27 @@ namespace task3 {
     }
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
-    const int threshold = 50;
+    const int threshold = 50; // general threshold for dominant color
+    const int tol = 20;       // tolerance for basket color
+    
+    // Basket color in 0-255 scale (approximation of [0.5,0.2,0.2])
+    const int basketR = 128;
+    const int basketG = 51;
+    const int basketB = 51;
+    
     for (const auto &pt : cloud->points) {
-        if (pt.g < threshold && (pt.r > threshold || pt.b > threshold)) {  
-            filtered_cloud->push_back(pt);
+        // General filter for objects: green channel is low and red or blue is high.
+        bool isObject = (pt.g < threshold && (pt.r > threshold || pt.b > threshold));
+        
+        // Additional filter to allow basket: point is close to basket colour.
+        bool isBasket = (std::abs(pt.r - basketR) < tol &&
+                         std::abs(pt.g - basketG) < tol &&
+                         std::abs(pt.b - basketB) < tol);
+    
+        if (isObject || isBasket) {
+             filtered_cloud->push_back(pt);
         }
     }
-
 
   if (filtered_cloud->empty()) {
       ROS_WARN("Color filtering removed all points; using original cloud.");
@@ -58,7 +73,7 @@ namespace task3 {
   }
   }
 
-    // Extract clusters from a point cloud and filter clusters based on size.
+// Extract clusters from a point cloud and filter clusters based on size.
 // Only clusters with maximum dimension (x or y) between 0.08 m and 0.22 m are returned.
 std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> extractClusters(
   const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud)
@@ -72,7 +87,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> extractClusters(
   pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
   ec.setClusterTolerance(0.02f); // 2 cm tolerance (adjust based on your data density)
   ec.setMinClusterSize(50);      // minimum number of points in a cluster
-  ec.setMaxClusterSize(25000);   // maximum number of points in a cluster
+  ec.setMaxClusterSize(100000);   // maximum number of points in a cluster
   ec.setSearchMethod(tree);
   ec.setInputCloud(cloud);
   ec.extract(clusterIndices);
@@ -105,8 +120,8 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> extractClusters(
       float clusterHeight = maxY - minY;
       float clusterSize   = std::max(clusterWidth, clusterHeight);
 
-      // Filter clusters to those within the tolerance: 80 mm to 220 mm.
-      if (clusterSize >= 0.08f && clusterSize <= 0.22f)
+      // Filter clusters to those within the tolerance: 60 mm to 250 mm.
+      if (clusterSize >= 0.07f && clusterSize <= 0.4f)
       {
           clusters.push_back(cluster);
       }
@@ -149,6 +164,33 @@ std::vector<float> transformPointCameraToBase(
       // Return original point as fallback
       return point_camera_frame;
   }
+}
+
+int getShapeSize(const std::string &shapeType,
+                      const float &avgDimension) {
+
+  int size = -1; // Default to unknown shape
+
+  if (shapeType == "cross") {
+      if (avgDimension >= 0.07f && avgDimension <= 0.125f) {
+        size = 20;
+    } else if (avgDimension > 0.125f && avgDimension <= 0.175f) {
+        size = 30;
+    } else if (avgDimension > 0.175f && avgDimension <= 0.225f) {
+        size = 40;
+    }
+  } else if (shapeType == "nought") {
+    if (avgDimension >= 0.07f && avgDimension <= 0.15f) {
+      size = 20;
+  } else if (avgDimension > 0.15f && avgDimension <= 0.21f) {
+      size = 30;
+  } else if (avgDimension > 0.21f && avgDimension <= 0.25f) {
+      size = 40;
+  }
+  } else {
+      size = -1; // Unknown shape
+  }
+  return size;
 }
 
 // Integrated function that combines shape classification and size estimation
@@ -379,24 +421,26 @@ static tf2_ros::TransformListener tf_listener(tf_buffer);
       quadrantVariance < 0.05) {
       isCross = true;
   }
-  
-  ROS_INFO("  Classification results: isNought=%d, isCross=%d", isNought, isCross);
-  
-  if (isNought) {
-      shape = "nought";
-  } else if (isCross) {
-      shape = "cross";
+
+  bool isBasket = false;
+  if (cloud->points.size() > 60000){
+      isBasket = true;
   }
+  
+  ROS_INFO("  Classification results: isNought=%d, isCross=%d, isBasket%d", isNought, isCross, isBasket);
   
   // Size determination based on the average dimension
   int size = -1;
-  
-  if (avgDimension >= 0.07f && avgDimension <= 0.125f) {
-      size = 20;
-  } else if (avgDimension > 0.125f && avgDimension <= 0.175f) {
-      size = 30;
-  } else if (avgDimension > 0.175f && avgDimension <= 0.225f) {
-      size = 40;
+  if (isNought) {
+      shape = "nought";
+      size = getShapeSize("nought", avgDimension);
+  } else if (isCross) {
+      shape = "cross";
+      size = getShapeSize("cross", avgDimension);
+  }
+  else if (isBasket) {
+      shape = "basket";
+      size = 350; // Size not applicable for basket
   }
   
   // Return shape classification, size, and centroid
@@ -411,7 +455,6 @@ static tf2_ros::TransformListener tf_listener(tf_buffer);
            shape.c_str(), size, centroidVec[0], centroidVec[1]);
   return std::make_tuple(shape, size, centroidVec, rotationAngle);
 }
-
 
 
   bool isNewCentroid(const geometry_msgs::Point &worldCentroid,
@@ -442,8 +485,12 @@ static tf2_ros::TransformListener tf_listener(tf_buffer);
 // Declare containers for storing centroids, counts, and clouds.
 std::vector<geometry_msgs::Point> worldCentroidsNought;
 std::vector<geometry_msgs::Point> worldCentroidsCross;
+std::vector<geometry_msgs::Point> worldCentroidsBasket;
+std::vector<int> worldSizeNought;
+std::vector<int> worldSizeCross;
 std::map<std::string, int> count;
-std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> shapePointClouds;
+std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> noughtPointClouds;
+std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> crossPointClouds;
 
 // Vector to store detailed detection info.
 std::vector<std::string> detection_info;
@@ -480,7 +527,8 @@ if (robot.moveArm(scan_pose)) {
    auto clusters = extractClusters(cloud);
    if (clusters.empty()) 
        continue;
-   
+
+       
    for (const auto &cluster : clusters) {
        auto shapeTuple = classifyAndMeasureShape(cluster);
         std::string shape = std::get<0>(shapeTuple);
@@ -500,17 +548,22 @@ if (robot.moveArm(scan_pose)) {
        bool isNew = false;
        if (shape == "nought") {  // replaced "square" with "nought"
            isNew = isNewCentroid(worldCentroid, worldCentroidsNought);
-           if (isNew)
+           if (isNew){
                worldCentroidsNought.push_back(worldCentroid);
+               worldSizeNought.push_back(estimatedSize);
+               noughtPointClouds.push_back(cluster);
+               count["nought"]++;}
        } else if (shape == "cross") {
            isNew = isNewCentroid(worldCentroid, worldCentroidsCross);
-           if (isNew)
+           if (isNew){
                worldCentroidsCross.push_back(worldCentroid);
-       }
-
-       if (isNew) {
-           count[shape]++;
-           shapePointClouds.push_back(cloud);
+                worldSizeCross.push_back(estimatedSize);
+                crossPointClouds.push_back(cluster);
+                count["cross"]++;}
+       } else if (shape == "basket") {
+           isNew = isNewCentroid(worldCentroid, worldCentroidsBasket);
+           if (isNew){
+               worldCentroidsBasket.push_back(worldCentroid);}
        }
 
        // Save detailed detection info.
@@ -533,18 +586,107 @@ ROS_INFO("Final Counts - Noughts: %d, Crosses: %d", count["nought"], count["cros
 
 float total_shapes = count["nought"] + count["cross"];
 float score = 0.0f;
-if (count["nought"] > count["cross"]){
+std::string shapeType = "none";
+int randomNought = 0;
+int randomCross = 0;
+geometry_msgs::Point worldCentroid;
+int worldSize;
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr worldCluster;
+
+if (count["nought"] > count["cross"] && count["nought"] > 0){
   score = count["nought"];
+  shapeType = "nought";
+  randomNought = rand() % count["nought"];
+  worldCentroid = worldCentroidsNought[randomNought];
+  worldSize = worldSizeNought[randomNought];
+  worldCluster = noughtPointClouds[randomNought];
 }
-else if (count["cross"] > count["nought"]){
+else if (count["cross"] > count["nought"] && count["cross"] > 0){
   score = count["cross"];
+  shapeType = "cross";
+  randomCross = rand() % count["cross"];
+  worldCentroid = worldCentroidsCross[randomCross];
+  worldSize = worldSizeCross[randomCross];
+  worldCluster = crossPointClouds[randomCross];
 }
-else if (count["cross"] == count["nought"]){
+else if (count["cross"] == count["nought"] && count["cross"] > 0){
   score = count["cross"];
+  shapeType = (rand() % 2 == 0) ? "cross" : "nought";
+  if (shapeType == "cross"){
+    randomCross = rand() % count["cross"];
+    worldCentroid = worldCentroidsCross[randomCross];
+    worldSize = worldSizeCross[randomCross];
+    worldCluster = crossPointClouds[randomCross];
+  }
+  else{
+    randomNought = rand() % count["nought"];
+    worldCentroid = worldCentroidsNought[randomNought];
+    worldSize = worldSizeNought[randomNought];
+    worldCluster = noughtPointClouds[randomNought];
+  }
 }
 else{
   score = 0;
 }
+geometry_msgs::Pose targetPose;
+targetPose.position.x = worldCentroid.x;
+targetPose.position.y = worldCentroid.y;
+targetPose.position.z = 0.45;
+targetPose.orientation = pose.orientation;
+
+geometry_msgs::Pose goal_pose;
+goal_pose.position.x = worldCentroidsBasket[0].x;
+goal_pose.position.y = worldCentroidsBasket[0].y;
+goal_pose.position.z = 0.45;
+goal_pose.orientation = pose.orientation;
+
+// Move the robot arm to the target pose.
+if (!robot.moveArm(targetPose)) {
+  ROS_ERROR("Failed to move to target pose");
+  return false;
+}
+float rotation_angle = task1::computeOrientationCV(worldCluster, shapeType);
+if (targetPose.position.x < 0){
+  rotation_angle = rotation_angle + M_PI/2;
+}
+
+// Use computed final angle to set the orientation of the arm.
+tf2::Quaternion q;
+q.setRPY(M_PI, 0, rotation_angle);
+geometry_msgs::Quaternion computed_orientation = tf2::toMsg(q);
+targetPose.orientation = computed_orientation;
+
+if (!robot.moveArm(targetPose)) {
+  ROS_ERROR("Failed to move to target pose with computed orientation");
+  return false;
+}
+float x_offset, y_offset;
+std::vector<float> offsets = task1::determinePickOffset(shapeType, worldSize, rotation_angle);
+x_offset = offsets[0];
+y_offset = offsets[1];
+
+
+// Construct the object pose (for picking).
+geometry_msgs::Pose object_pose;
+object_pose.position.x = targetPose.position.x + x_offset;
+object_pose.position.y = targetPose.position.y + y_offset;
+object_pose.position.z = 0.035;
+object_pose.orientation = computed_orientation;
+
+// Attempt to pick up the object.
+if (!robot.pick(object_pose)) {
+  ROS_ERROR("Failed to pick the object");
+  return false;
+}
+
+// Attempt to place the object in the basket.
+if (!robot.place(goal_pose)) {
+  ROS_ERROR("Failed to place the object in the basket");
+  return false;
+}
+
+res.total_num_shapes = total_shapes;
+res.num_most_common_shape = score;
 
 return true;
 } // end solve
