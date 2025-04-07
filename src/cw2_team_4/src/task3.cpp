@@ -182,9 +182,9 @@ int getShapeSize(const std::string &shapeType,
   } else if (shapeType == "nought") {
     if (avgDimension >= 0.07f && avgDimension <= 0.15f) {
       size = 20;
-  } else if (avgDimension > 0.15f && avgDimension <= 0.21f) {
+  } else if (avgDimension > 0.15f && avgDimension <= 0.2f) {
       size = 30;
-  } else if (avgDimension > 0.21f && avgDimension <= 0.25f) {
+  } else if (avgDimension > 0.2f && avgDimension <= 0.28f) {
       size = 40;
   }
   } else {
@@ -373,15 +373,15 @@ static tf2_ros::TransformListener tf_listener(tf_buffer);
   
   // Debug output
   ROS_INFO("Shape and size metrics:");
-  ROS_INFO("  Total points: %lu", cloud->points.size());
+  // ROS_INFO("  Total points: %lu", cloud->points.size());
   ROS_INFO("  Height: %.2f, Width: %.2f", height, width);
-  ROS_INFO("  Aspect ratio: %.2f", aspectRatio);
-  ROS_INFO("  Rotation angle: %.2f degrees", rotationAngle * 180 / M_PI);
+  // ROS_INFO("  Aspect ratio: %.2f", aspectRatio);
+  // ROS_INFO("  Rotation angle: %.2f degrees", rotationAngle * 180 / M_PI);
   // ROS_INFO("  Circle densities: [%.2f, %.2f, %.2f, %.2f, %.2f]", 
-  //          circleDensities[0], circleDensities[1], circleDensities[2], 
-  //          circleDensities[3], circleDensities[4]);
+  //           circleDensities[0], circleDensities[1], circleDensities[2], 
+  //           circleDensities[3], circleDensities[4]);
   // ROS_INFO("  Angular variance: %.5f", angularVariance);
-  ROS_INFO("  Inner/Outer ratio: %.2f/%.2f", innerRatio, outerRatio);
+  // ROS_INFO("  Inner/Outer ratio: %.2f/%.2f", innerRatio, outerRatio);
   ROS_INFO("  Average dimension: %.2f", avgDimension);
 
   
@@ -498,12 +498,31 @@ std::vector<std::string> detection_info;
 // Create a vector to hold the scan poses.
 std::vector<geometry_msgs::Pose> scan_poses;
 
+// Move to home position.
+geometry_msgs::Pose home_pose;
+home_pose.position.x = 0.4;
+home_pose.position.y = 0.0;
+home_pose.position.z = 0.6;
+
 // Set up the common orientation and z-height.
 tf2::Quaternion quat;
 quat.setRPY(M_PI, 0, -M_PI / 4);
 geometry_msgs::Pose pose;
-pose.orientation = tf2::toMsg(quat);
+geometry_msgs::Quaternion positive_orientation = tf2::toMsg(quat);
+
+// Set up orientation for goal pose
+tf2::Quaternion quat2;
+quat2.setRPY(M_PI, 0, 3*M_PI / 4);
+geometry_msgs::Quaternion negative_orientation = tf2::toMsg(quat2);
+
+// Set up the height of the scan poses.
 pose.position.z = 0.75;
+
+home_pose.orientation = positive_orientation;
+if (!robot.moveArm(home_pose)) {
+    ROS_ERROR("Failed to move to home position");
+    return false;
+}
 
 // Define scan poses.
 std::vector<double> x_values = {0.4, 0.4, 0.4, 0, -0.4, -0.4, -0.4, 0};
@@ -512,11 +531,17 @@ std::vector<double> y_values = {-0.4, 0, 0.4, 0.4, 0.4, 0, -0.4, -0.4};
 for (size_t i = 0; i < x_values.size(); ++i) {
 pose.position.x = x_values[i];
 pose.position.y = y_values[i];
+pose.orientation = positive_orientation; // Default orientation
+if (pose.position.x < 0){
+  pose.orientation = negative_orientation;
+}
 scan_poses.push_back(pose);
 }
 
 // Iterate over all the scan poses.
 for (const auto &scan_pose : scan_poses) {
+
+   // Move the robot arm to the scan pose.
 if (robot.moveArm(scan_pose)) {
    ros::Duration(1.0).sleep();
 
@@ -538,7 +563,38 @@ if (robot.moveArm(scan_pose)) {
 
        if (shape == "none") continue;
        // Estimate size and centroid.
-       if (estimatedSize == -1) continue; // Skip if size is unknown.
+       if (estimatedSize == -1 && shape != "none"){
+        geometry_msgs::Pose rescan_pose;
+        rescan_pose.position.x = centroid[0];
+        rescan_pose.position.y = centroid[1];
+        rescan_pose.position.z = 0.75;
+        rescan_pose.orientation = positive_orientation;
+        if (rescan_pose.position.x < 0){
+          rescan_pose.orientation = negative_orientation;
+        }
+        if (!robot.moveArm(rescan_pose)) {
+          ROS_ERROR("Failed to move to rescan pose");
+          return false;
+        }
+        cloud = capturePointCloud(nh);
+        if (!cloud || cloud->empty() || cloud->points.size() > 300000)
+            continue;
+        clusters = extractClusters(cloud);
+        if (clusters.empty()) 
+            continue;
+        for (const auto &cluster : clusters) {
+            shapeTuple = classifyAndMeasureShape(cluster);
+            shape = std::get<0>(shapeTuple);
+            estimatedSize = std::get<1>(shapeTuple);
+            centroid = std::get<2>(shapeTuple);
+            rotation_angle = std::get<3>(shapeTuple);
+        }
+        if (shape == "none") continue;
+        if (estimatedSize == -1){
+            ROS_ERROR("Failed to estimate size after rescan");
+            continue;
+        }
+       }
 
        geometry_msgs::Point worldCentroid;
        worldCentroid.x = centroid[0];
@@ -632,13 +688,10 @@ geometry_msgs::Pose targetPose;
 targetPose.position.x = worldCentroid.x;
 targetPose.position.y = worldCentroid.y;
 targetPose.position.z = 0.45;
-targetPose.orientation = pose.orientation;
-
-geometry_msgs::Pose goal_pose;
-goal_pose.position.x = worldCentroidsBasket[0].x;
-goal_pose.position.y = worldCentroidsBasket[0].y;
-goal_pose.position.z = 0.45;
-goal_pose.orientation = pose.orientation;
+targetPose.orientation = positive_orientation;
+if (targetPose.position.x < 0){
+  targetPose.orientation = negative_orientation;
+}
 
 // Move the robot arm to the target pose.
 if (!robot.moveArm(targetPose)) {
@@ -647,7 +700,7 @@ if (!robot.moveArm(targetPose)) {
 }
 float rotation_angle = task1::computeOrientationCV(worldCluster, shapeType);
 if (targetPose.position.x < 0){
-  rotation_angle = rotation_angle + M_PI/2;
+  rotation_angle = -rotation_angle;
 }
 
 // Use computed final angle to set the orientation of the arm.
@@ -665,7 +718,6 @@ std::vector<float> offsets = task1::determinePickOffset(shapeType, worldSize, ro
 x_offset = offsets[0];
 y_offset = offsets[1];
 
-
 // Construct the object pose (for picking).
 geometry_msgs::Pose object_pose;
 object_pose.position.x = targetPose.position.x + x_offset;
@@ -678,12 +730,37 @@ if (!robot.pick(object_pose)) {
   ROS_ERROR("Failed to pick the object");
   return false;
 }
+if (shapeType == "nought"){
+ROS_INFO("Picked up %s with size: %d at (%.2f, %.2f), with random index %d from the %s list", shapeType.c_str(), worldSize, worldCentroid.x, worldCentroid.y, randomNought, shapeType.c_str());
+}
+else if (shapeType == "cross"){
+ROS_INFO("Picked up %s with size: %d at (%.2f, %.2f), with random index %d from the %s list", shapeType.c_str(), worldSize, worldCentroid.x, worldCentroid.y, randomCross, shapeType.c_str());
+}
+
+// Construct the goal pose (for placing).
+geometry_msgs::Pose goal_pose;
+goal_pose.position.x = worldCentroidsBasket[0].x;
+goal_pose.position.y = worldCentroidsBasket[0].y;
+goal_pose.position.z = 0.3;
+goal_pose.orientation = negative_orientation;
+if (goal_pose.position.x > 0){
+  goal_pose.orientation = positive_orientation;
+}
 
 // Attempt to place the object in the basket.
 if (!robot.place(goal_pose)) {
   ROS_ERROR("Failed to place the object in the basket");
   return false;
 }
+
+// Move the arm back to home position.
+if (!robot.moveArm(home_pose)) {
+  ROS_ERROR("Failed to move back to home position");
+  return false;
+}
+
+ROS_INFO("Successfully placed the object in the basket and returned to home position");
+ROS_INFO("Task 3 completed successfully");
 
 res.total_num_shapes = total_shapes;
 res.num_most_common_shape = score;

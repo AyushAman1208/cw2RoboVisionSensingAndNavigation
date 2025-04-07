@@ -263,7 +263,7 @@ std::vector<float> determinePickOffset(const std::string &shapeType, int size, f
 
     tf2::Quaternion quat3;
     quat3.setRPY(M_PI, 0, 3*M_PI / 4);
-    geometry_msgs::Quaternion negative_orientation = tf2::toMsg(quat2);
+    geometry_msgs::Quaternion negative_orientation = tf2::toMsg(quat3);
 
     home_pose.orientation = positive_orientation;  // Use the same orientation as the object
     if (!robot.moveArm(home_pose)) {
