@@ -41,10 +41,9 @@ namespace task3 {
     }
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
-    const int green_threshold = 50;
-    // const int threshold = 100; // Adjust based on your sensor's scaling.
+    const int threshold = 50;
     for (const auto &pt : cloud->points) {
-        if (pt.g < green_threshold) {  
+        if (pt.g < threshold && (pt.r > threshold || pt.b > threshold)) {  
             filtered_cloud->push_back(pt);
         }
     }
@@ -116,272 +115,6 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> extractClusters(
 }
 
 
-std::string classifyShapeFromPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
-  if (cloud->empty()) {
-      return "none";
-  }
-
-  // Step 1: Find the centroid of the point cloud
-  Eigen::Vector4f centroid;
-  pcl::compute3DCentroid(*cloud, centroid);
-  
-  // Step 2: Find the 2D bounding box (assuming points are generally on a plane)
-  float minX = std::numeric_limits<float>::max();
-  float minY = std::numeric_limits<float>::max();
-  float maxX = -std::numeric_limits<float>::max();
-  float maxY = -std::numeric_limits<float>::max();
-  
-  for (const auto& point : cloud->points) {
-      minX = std::min(minX, point.x);
-      minY = std::min(minY, point.y);
-      maxX = std::max(maxX, point.x);
-      maxY = std::max(maxY, point.y);
-  }
-  
-  float width = maxX - minX;
-  float height = maxY - minY;
-  float aspectRatio = width / height;
-  
-  // Step 3: Create a 2D grid to represent the point distribution
-  const int gridSize = 20; // Adjust based on point cloud density
-  std::vector<std::vector<bool>> occupancyGrid(gridSize, std::vector<bool>(gridSize, false));
-  
-  // Fill the grid based on point presence
-  for (const auto& point : cloud->points) {
-      int gridX = static_cast<int>((point.x - minX) / width * (gridSize - 1));
-      int gridY = static_cast<int>((point.y - minY) / height * (gridSize - 1));
-      
-      // Bound checking
-      gridX = std::max(0, std::min(gridSize - 1, gridX));
-      gridY = std::max(0, std::min(gridSize - 1, gridY));
-      
-      occupancyGrid[gridY][gridX] = true;
-  }
-  
-  // Step 4: Analyze the grid for shape characteristics
-  // Count occupied cells
-  int occupiedCells = 0;
-  for (const auto& row : occupancyGrid) {
-      for (bool cell : row) {
-          if (cell) occupiedCells++;
-      }
-  }
-  
-  // Calculate density (percentage of grid filled)
-  float density = static_cast<float>(occupiedCells) / (gridSize * gridSize);
-  
-  // Step 5: Check for empty center (for nought detection)
-  // Get center region of the grid
-  int centerStartX = gridSize / 4;
-  int centerEndX = (gridSize * 3) / 4;
-  int centerStartY = gridSize / 4;
-  int centerEndY = (gridSize * 3) / 4;
-  
-  int centerCells = 0;
-  int centerOccupied = 0;
-  
-  for (int y = centerStartY; y < centerEndY; y++) {
-      for (int x = centerStartX; x < centerEndX; x++) {
-          centerCells++;
-          if (occupancyGrid[y][x]) centerOccupied++;
-      }
-  }
-  
-  float centerDensity = static_cast<float>(centerOccupied) / centerCells;
-  
-  // Step 6: Check for cross pattern using radial density analysis
-  
-     // Define regions (in grid coordinates)
-     struct Region {
-      int startX, startY, endX, endY;
-  };
-  
-  // Define the four "arms" regions of a potential cross
-  Region leftArm = {0, gridSize/3, gridSize/3, (2*gridSize)/3};
-  Region rightArm = {(2*gridSize)/3, gridSize/3, gridSize, (2*gridSize)/3};
-  Region topArm = {gridSize/3, 0, (2*gridSize)/3, gridSize/3};
-  Region bottomArm = {gridSize/3, (2*gridSize)/3, (2*gridSize)/3, gridSize};
-  
-  // Define corners
-  Region topLeft = {0, 0, gridSize/3, gridSize/3};
-  Region topRight = {(2*gridSize)/3, 0, gridSize, gridSize/3};
-  Region bottomLeft = {0, (2*gridSize)/3, gridSize/3, gridSize};
-  Region bottomRight = {(2*gridSize)/3, (2*gridSize)/3, gridSize, gridSize};
-  
-  auto calculateRegionDensity = [&occupancyGrid](const Region& r) -> float {
-      int cells = 0;
-      int occupied = 0;
-      for (int y = r.startY; y < r.endY; y++) {
-          for (int x = r.startX; x < r.endX; x++) {
-              cells++;
-              if (occupancyGrid[y][x]) occupied++;
-          }
-      }
-      return cells > 0 ? static_cast<float>(occupied) / cells : 0;
-  };
-  
-  float leftDensity = calculateRegionDensity(leftArm);
-  float rightDensity = calculateRegionDensity(rightArm);
-  float topDensity = calculateRegionDensity(topArm);
-  float bottomDensity = calculateRegionDensity(bottomArm);
-  
-  float topLeftDensity = calculateRegionDensity(topLeft);
-  float topRightDensity = calculateRegionDensity(topRight);
-  float bottomLeftDensity = calculateRegionDensity(bottomLeft);
-  float bottomRightDensity = calculateRegionDensity(bottomRight);
-  
-  // Average arm density and corner density
-  float armsDensity = (leftDensity + rightDensity + topDensity + bottomDensity) / 4.0;
-  float cornersDensity = (topLeftDensity + topRightDensity + bottomLeftDensity + bottomRightDensity) / 4.0;
-  
-  // Step 7: Calculate radial density (rings around center)
-  std::vector<float> ringDensities;
-  const int numRings = 5;
-  
-  for (int ring = 0; ring < numRings; ring++) {
-      float innerRadiusRatio = static_cast<float>(ring) / numRings;
-      float outerRadiusRatio = static_cast<float>(ring + 1) / numRings;
-      
-      int pointsInRing = 0;
-      int totalPointsChecked = 0;
-      
-      for (const auto& point : cloud->points) {
-          // Calculate normalized distance from centroid (0-1 range)
-          float dx = (point.x - centroid[0]) / (width/2);
-          float dy = (point.y - centroid[1]) / (height/2);
-          float normalizedDist = std::sqrt(dx*dx + dy*dy);
-          
-          if (normalizedDist >= innerRadiusRatio && normalizedDist < outerRadiusRatio) {
-              totalPointsChecked++;
-              pointsInRing++;
-          }
-      }
-      
-      // Avoid division by zero
-      float ringDensity = totalPointsChecked > 0 ? 
-          static_cast<float>(pointsInRing) / totalPointsChecked : 0.0f;
-      
-      ringDensities.push_back(ringDensity);
-  }
-  
-  // Debug output
-  ROS_INFO("Shape metrics:");
-  ROS_INFO("  Total points: %lu", cloud->points.size());
-  ROS_INFO("  Overall density: %.2f", density);
-  ROS_INFO("  Center density: %.2f", centerDensity);
-  ROS_INFO("  Arms density: %.2f", armsDensity);
-  ROS_INFO("  Corners density: %.2f", cornersDensity);
-  ROS_INFO("  Aspect ratio: %.2f", aspectRatio);
-  ROS_INFO("  Ring densities: [%.2f, %.2f, %.2f, %.2f, %.2f]", 
-           ringDensities[0], ringDensities[1], ringDensities[2], 
-           ringDensities[3], ringDensities[4]);
-  
-  // OPTIMIZED CLASSIFICATION LOGIC BASED ON THE PROVIDED METRICS
-  
-  // ------ NOUGHT DETECTION -------
-  bool isNought = centerDensity < 0.20 &&                 // Empty center
-                  density > 0.40 &&                       // Substantial overall density
-                  cornersDensity > 0.40 &&                // Corners are filled
-                  aspectRatio > 0.8 && aspectRatio < 1.2; // Square-ish shape
-  
-  // Additional check for ring pattern typical for noughts
-  if (ringDensities.size() >= 3) {
-      // First two rings should be near empty, outer rings filled
-      if (ringDensities[0] < 0.30 && ringDensities[1] < 0.30 && 
-          ringDensities[3] > 0.70 && ringDensities[4] > 0.70) {
-          isNought = isNought && true;
-      } else {
-          isNought = false;
-      }
-  }
-  
-  // ------ CROSS DETECTION -------
-  bool isCross = centerDensity > 0.50 &&                  // Filled center
-                 cornersDensity < 0.30 &&                 // Empty corners
-                 armsDensity > 0.50 &&                    // Substantial arm density
-                 aspectRatio > 0.8 && aspectRatio < 1.2;  // Square-ish shape
-  
-  // Check for uniform ring density (characteristic of crosses)
-  if (ringDensities.size() >= 3) {
-      float ringSum = 0;
-      float ringVar = 0;
-      
-      // Calculate mean
-      for (float density : ringDensities) {
-          ringSum += density;
-      }
-      float ringMean = ringSum / ringDensities.size();
-      
-      // Calculate variance
-      for (float density : ringDensities) {
-          ringVar += (density - ringMean) * (density - ringMean);
-      }
-      ringVar /= ringDensities.size();
-      
-      // Low variance indicates uniform density across rings (cross)
-      // High variance indicates non-uniform density (nought)
-      if (ringVar < 0.05 && ringMean > 0.70) {
-          isCross = isCross && true;
-      }
-  }
-  
-  // Make the final classification
-  if (isNought) {
-      return "nought";
-  } 
-  else if (isCross) {
-      return "cross";
-  }
-  
-  return "none";
-}
-
-    
-  std::pair<int, std::vector<float>> estimateSize(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
-    float minX = std::numeric_limits<float>::max();
-    float maxX = -std::numeric_limits<float>::max();
-    float minY = std::numeric_limits<float>::max();
-    float maxY = -std::numeric_limits<float>::max();
-    float sumX = 0.0f, sumY = 0.0f, sumZ = 0.0f;
-    int count = 0;
-
-    // Compute bounding box (x-y only) and sums for centroid calculation.
-    for (const auto &pt : cloud->points) {
-        if (pt.x < minX) minX = pt.x;
-        if (pt.x > maxX) maxX = pt.x;
-        if (pt.y < minY) minY = pt.y;
-        if (pt.y > maxY) maxY = pt.y;
-        
-        sumX += pt.x;
-        sumY += pt.y;
-        sumZ += pt.z;
-        ++count;
-    }
-    
-    // Compute the centroid as the average of all points.
-    std::vector<float> centroid(3, 0.0f);
-    if (count > 0) {
-        centroid[0] = sumX / count;
-        centroid[1] = sumY / count;
-        centroid[2] = sumZ / count;
-    }
-    
-    float rangeX = maxX - minX;
-    float rangeY = maxY - minY;
-    
-    int size = -1; // Default: unknown size
-    // Use proper chained comparisons in C++
-    if (rangeX >= 0.08f && rangeX <= 0.12f && rangeY >= 0.08f && rangeY <= 0.12f) {
-        size = 20;
-    } else if (rangeX > 0.13f && rangeX <= 0.17f && rangeY > 0.13f && rangeY <= 0.17f) {
-        size = 30;
-    } else if (rangeX > 0.18f && rangeX <= 0.22f && rangeY > 0.18f && rangeY <= 0.22f) {
-        size = 40;
-    }
-    
-    return std::make_pair(size, centroid);
-}
-
 // Function to transform point from camera frame to base frame
 std::vector<float> transformPointCameraToBase(
   const std::vector<float>& point_camera_frame,
@@ -418,6 +151,269 @@ std::vector<float> transformPointCameraToBase(
   }
 }
 
+// Integrated function that combines shape classification and size estimation
+std::tuple<std::string, int, std::vector<float>, float> classifyAndMeasureShape(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
+  if (cloud->empty()) {
+      return std::make_tuple("none", -1, std::vector<float>{0.0f, 0.0f, 0.0f}, 0.0f);
+  }
+
+  // Set up TF buffer and listener.
+static tf2_ros::Buffer tf_buffer;
+static tf2_ros::TransformListener tf_listener(tf_buffer);
+
+
+  // Step 1: Find the centroid of the point cloud
+  Eigen::Vector4f centroid;
+  pcl::compute3DCentroid(*cloud, centroid);
+  
+  // Step 2: Perform PCA to find principal axes
+  pcl::PCA<pcl::PointXYZRGB> pca;
+  pca.setInputCloud(cloud);
+  Eigen::Matrix3f eigenVectors = pca.getEigenVectors();
+  
+  // Calculate rotation angle from the principal axis
+  Eigen::Vector3f mainAxis(eigenVectors(0, 0), eigenVectors(1, 0), eigenVectors(2, 0));
+  float rotationAngle = atan2(mainAxis(1), mainAxis(0));
+  
+  // Step 3: Create a normalized point cloud by aligning it with axes
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr normalizedCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  normalizedCloud->points.resize(cloud->points.size());
+  
+  float cosTheta = cos(rotationAngle);
+  float sinTheta = sin(rotationAngle);
+  
+  for (size_t i = 0; i < cloud->points.size(); i++) {
+      float x = cloud->points[i].x - centroid[0];
+      float y = cloud->points[i].y - centroid[1];
+      
+      normalizedCloud->points[i].x = x * cosTheta - y * sinTheta;
+      normalizedCloud->points[i].y = x * sinTheta + y * cosTheta;
+      normalizedCloud->points[i].z = cloud->points[i].z - centroid[2];
+      normalizedCloud->points[i].rgb = cloud->points[i].rgb;
+  }
+  
+  // Get the bounding box of the normalized cloud
+  float minX = std::numeric_limits<float>::max();
+  float minY = std::numeric_limits<float>::max();
+  float maxX = -std::numeric_limits<float>::max();
+  float maxY = -std::numeric_limits<float>::max();
+  
+  for (const auto& point : normalizedCloud->points) {
+      minX = std::min(minX, point.x);
+      minY = std::min(minY, point.y);
+      maxX = std::max(maxX, point.x);
+      maxY = std::max(maxY, point.y);
+  }
+
+  float width = maxX - minX;
+  float height = maxY - minY; 
+  float avgDimension = (width + height) / 2.0f;
+  float aspectRatio = width / height;
+  
+  // Step 4: Create concentric circle analysis
+  const int numCircles = 5;
+  std::vector<int> circlePointCount(numCircles, 0);
+  std::vector<float> circleDensities(numCircles, 0.0f);
+  
+  float maxRadius = std::min(width, height) / 2.0f;
+  float centerX = (maxX + minX) / 2.0f;
+  float centerY = (maxY + minY) / 2.0f;
+  
+  // Count points in each concentric circle
+  for (const auto& point : normalizedCloud->points) {
+      float dx = point.x - centerX;
+      float dy = point.y - centerY;
+      float distance = std::sqrt(dx*dx + dy*dy);
+      float normalizedDistance = distance / maxRadius;
+      
+      int circleIndex = std::min(static_cast<int>(normalizedDistance * numCircles), numCircles - 1);
+      circlePointCount[circleIndex]++;
+  }
+  
+  // Calculate actual areas of each ring
+  std::vector<float> ringAreas(numCircles);
+  for (int i = 0; i < numCircles; i++) {
+      float outerRadius = maxRadius * (i + 1) / numCircles;
+      float innerRadius = (i == 0) ? 0 : maxRadius * i / numCircles;
+      ringAreas[i] = M_PI * (outerRadius * outerRadius - innerRadius * innerRadius);
+  }
+  
+  // Normalize by area to get density
+  float totalArea = M_PI * maxRadius * maxRadius;
+  float totalPoints = normalizedCloud->points.size();
+  float averagePointDensity = totalPoints / totalArea;
+  
+  for (int i = 0; i < numCircles; i++) {
+      float expectedPoints = averagePointDensity * ringAreas[i];
+      if (expectedPoints > 0) {
+          circleDensities[i] = static_cast<float>(circlePointCount[i]) / expectedPoints;
+      }
+  }
+  
+  // Step 5: Calculate angular distribution
+  const int numAngles = 36;
+  std::vector<int> angularCounts(numAngles, 0);
+  
+  for (const auto& point : normalizedCloud->points) {
+      float dx = point.x - centerX;
+      float dy = point.y - centerY;
+      float angle = atan2(dy, dx);
+      
+      if (angle < 0) angle += 2 * M_PI;
+      int angleBin = static_cast<int>((angle / (2 * M_PI)) * numAngles) % numAngles;
+      angularCounts[angleBin]++;
+  }
+  
+  // Calculate normalized angular counts and variance
+  std::vector<float> normalizedAngularCounts(numAngles);
+  float angularSum = 0.0f;
+  
+  for (int i = 0; i < numAngles; i++) {
+      normalizedAngularCounts[i] = static_cast<float>(angularCounts[i]) / totalPoints;
+      angularSum += normalizedAngularCounts[i];
+  }
+  
+  float angularMean = angularSum / numAngles;
+  float angularVariance = 0.0f;
+  
+  for (float count : normalizedAngularCounts) {
+      angularVariance += (count - angularMean) * (count - angularMean);
+  }
+  angularVariance /= numAngles;
+  
+  // Step 6: Inner/outer ratio analysis
+  float innerRadius = maxRadius * 0.3f;
+  int innerPoints = 0;
+  int outerPoints = 0;
+  
+  for (const auto& point : normalizedCloud->points) {
+      float dx = point.x - centerX;
+      float dy = point.y - centerY;
+      float distance = std::sqrt(dx*dx + dy*dy);
+      
+      if (distance < innerRadius) {
+          innerPoints++;
+      } else {
+          outerPoints++;
+      }
+  }
+  
+  float innerRatio = static_cast<float>(innerPoints) / totalPoints;
+  float outerRatio = static_cast<float>(outerPoints) / totalPoints;
+  
+  // Step 7: Quadrant analysis
+  int q1Points = 0, q2Points = 0, q3Points = 0, q4Points = 0;
+  
+  for (const auto& point : normalizedCloud->points) {
+      float dx = point.x - centerX;
+      float dy = point.y - centerY;
+      
+      if (dx >= 0 && dy >= 0) q1Points++;
+      else if (dx < 0 && dy >= 0) q2Points++;
+      else if (dx < 0 && dy < 0) q3Points++;
+      else q4Points++;
+  }
+  
+  std::vector<float> quadrantRatios = {
+      static_cast<float>(q1Points) / totalPoints,
+      static_cast<float>(q2Points) / totalPoints,
+      static_cast<float>(q3Points) / totalPoints,
+      static_cast<float>(q4Points) / totalPoints
+  };
+  
+  float quadrantMean = 0.25f;
+  float quadrantVariance = 0.0f;
+  
+  for (float ratio : quadrantRatios) {
+      quadrantVariance += (ratio - quadrantMean) * (ratio - quadrantMean);
+  }
+  quadrantVariance /= 4;
+  
+  // Debug output
+  ROS_INFO("Shape and size metrics:");
+  ROS_INFO("  Total points: %lu", cloud->points.size());
+  ROS_INFO("  Height: %.2f, Width: %.2f", height, width);
+  ROS_INFO("  Aspect ratio: %.2f", aspectRatio);
+  ROS_INFO("  Rotation angle: %.2f degrees", rotationAngle * 180 / M_PI);
+  // ROS_INFO("  Circle densities: [%.2f, %.2f, %.2f, %.2f, %.2f]", 
+  //          circleDensities[0], circleDensities[1], circleDensities[2], 
+  //          circleDensities[3], circleDensities[4]);
+  // ROS_INFO("  Angular variance: %.5f", angularVariance);
+  ROS_INFO("  Inner/Outer ratio: %.2f/%.2f", innerRatio, outerRatio);
+  ROS_INFO("  Average dimension: %.2f", avgDimension);
+
+  
+  // Shape classification
+  std::string shape = "none";
+  
+  // NOUGHT DETECTION
+  bool isNought = false;
+  
+  if (circleDensities[0] <= 0.1 && 
+      circleDensities[4] >= 0.3 &&
+      circleDensities[4] > circleDensities[0] * 3 &&
+      angularVariance < 0.0001 &&
+      innerRatio < 0.1 &&
+      aspectRatio > 0.9 && aspectRatio < 1.1) {
+      isNought = true;
+  }
+
+  // Alternative nought detection
+  if (innerRatio < 0.01 &&
+    aspectRatio > 0.95 && aspectRatio < 1.05){
+      isNought = true;
+  }
+  
+  // CROSS DETECTION
+  bool isCross = false;
+  
+  if (innerRatio > 0.1 &&
+      std::abs(circleDensities[0] - circleDensities[4]) > 0.2 &&
+      angularVariance > 0.0001 &&
+      aspectRatio > 0.9 && aspectRatio < 1.1) {
+      isCross = true;
+  }
+  
+  // Alternative cross detection
+  if (innerRatio > outerRatio * 0.5 &&
+      quadrantVariance < 0.05) {
+      isCross = true;
+  }
+  
+  ROS_INFO("  Classification results: isNought=%d, isCross=%d", isNought, isCross);
+  
+  if (isNought) {
+      shape = "nought";
+  } else if (isCross) {
+      shape = "cross";
+  }
+  
+  // Size determination based on the average dimension
+  int size = -1;
+  
+  if (avgDimension >= 0.07f && avgDimension <= 0.125f) {
+      size = 20;
+  } else if (avgDimension > 0.125f && avgDimension <= 0.175f) {
+      size = 30;
+  } else if (avgDimension > 0.175f && avgDimension <= 0.225f) {
+      size = 40;
+  }
+  
+  // Return shape classification, size, and centroid
+  std::vector<float> centroidVec = {centroid[0], centroid[1], centroid[2]};
+
+  std::vector<float> transformedCentroid = transformPointCameraToBase(centroidVec, tf_buffer);
+  centroidVec[0] = transformedCentroid[0];
+  centroidVec[1] = transformedCentroid[1];
+  centroidVec[2] = transformedCentroid[2];
+
+  ROS_INFO("Final shape: %s, size: %d, centroid: [%.3f, %.3f]", 
+           shape.c_str(), size, centroidVec[0], centroidVec[1]);
+  return std::make_tuple(shape, size, centroidVec, rotationAngle);
+}
+
+
+
   bool isNewCentroid(const geometry_msgs::Point &worldCentroid,
     const std::vector<geometry_msgs::Point>& existingCentroids,
     double threshold = 0.05) {
@@ -439,95 +435,118 @@ std::vector<float> transformPointCameraToBase(
     cw2 &robot, ros::NodeHandle &nh) {
 ROS_INFO("[Task3] Solving Task 3...");
 
-  // Declare containers for storing centroids, counts, and clouds.
-  std::vector<geometry_msgs::Point> worldCentroidsNought;
-  std::vector<geometry_msgs::Point> worldCentroidsCross;
-  std::map<std::string, int> count;
-  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> shapePointClouds;
+// Set up TF buffer and listener.
+static tf2_ros::Buffer tf_buffer;
+static tf2_ros::TransformListener tf_listener(tf_buffer);
 
-  // Create a vector to hold the scan poses.
-  std::vector<geometry_msgs::Pose> scan_poses;
+// Declare containers for storing centroids, counts, and clouds.
+std::vector<geometry_msgs::Point> worldCentroidsNought;
+std::vector<geometry_msgs::Point> worldCentroidsCross;
+std::map<std::string, int> count;
+std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> shapePointClouds;
 
-  // Set up the common orientation and z-height.
-  tf2::Quaternion quat;
-  quat.setRPY(M_PI, 0, -M_PI / 4);
-  geometry_msgs::Pose pose;
-  pose.orientation = tf2::toMsg(quat);
-  pose.position.z = 0.75;
+// Vector to store detailed detection info.
+std::vector<std::string> detection_info;
 
-  // std::vector<double> x_values = {-0.45, -0.25, 0, 0.25, 0.55, 0.55, 0.55, 0.55, 0.25, 0.35, 0.35, -0.35, -0.5, -0.5, -0.35, -0.45, -0.25, 0};
-  // std::vector<double> y_values = {-0.4, -0.4, -0.4, -0.4, -0.4, -0.2, 0.2, 0.4, 0.4, 0.2, -0.2, -0.2, -0.2, 0.2, 0.2, 0.4, 0.4, 0.4};
+// Create a vector to hold the scan poses.
+std::vector<geometry_msgs::Pose> scan_poses;
 
-  std::vector<double> x_values = {0.4, 0.4, 0.4, 0, -0.4, -0.4, -0.4, 0};
-  std::vector<double> y_values = {-0.4, 0, 0.4, 0.4, 0.4, 0, -0.4, -0.4};
+// Set up the common orientation and z-height.
+tf2::Quaternion quat;
+quat.setRPY(M_PI, 0, -M_PI / 4);
+geometry_msgs::Pose pose;
+pose.orientation = tf2::toMsg(quat);
+pose.position.z = 0.75;
 
+// Define scan poses.
+std::vector<double> x_values = {0.4, 0.4, 0.4, 0, -0.4, -0.4, -0.4, 0};
+std::vector<double> y_values = {-0.4, 0, 0.4, 0.4, 0.4, 0, -0.4, -0.4};
 
-  for (size_t i = 0; i < x_values.size(); ++i) {
-          pose.position.x = x_values[i];
-          pose.position.y = y_values[i];
-          scan_poses.push_back(pose);
-  }
-
+for (size_t i = 0; i < x_values.size(); ++i) {
+pose.position.x = x_values[i];
+pose.position.y = y_values[i];
+scan_poses.push_back(pose);
+}
 
 // Iterate over all the scan poses.
 for (const auto &scan_pose : scan_poses) {
+if (robot.moveArm(scan_pose)) {
+   ros::Duration(1.0).sleep();
 
-  static tf2_ros::Buffer tf_buffer;
-  static tf2_ros::TransformListener tf_listener(tf_buffer);
+   auto cloud = capturePointCloud(nh);
+   if (!cloud || cloud->empty() || cloud->points.size() > 300000)
+       continue;
 
-     if (robot.moveArm(scan_pose)) {
-         ros::Duration(1.0).sleep();
+   auto clusters = extractClusters(cloud);
+   if (clusters.empty()) 
+       continue;
+   
+   for (const auto &cluster : clusters) {
+       auto shapeTuple = classifyAndMeasureShape(cluster);
+        std::string shape = std::get<0>(shapeTuple);
+        int estimatedSize = std::get<1>(shapeTuple);
+        std::vector<float> centroid = std::get<2>(shapeTuple);
+        float rotation_angle = std::get<3>(shapeTuple);
 
-         auto cloud = capturePointCloud(nh);
-         if (!cloud || cloud->empty()) continue;
+       if (shape == "none") continue;
+       // Estimate size and centroid.
+       if (estimatedSize == -1) continue; // Skip if size is unknown.
 
-         auto clusters = extractClusters(cloud);
-         if (clusters.empty()) continue;
-          
-         for (const auto &cluster : clusters) {
+       geometry_msgs::Point worldCentroid;
+       worldCentroid.x = centroid[0];
+       worldCentroid.y = centroid[1];
+       worldCentroid.z = centroid[2];
 
-          std::string shape = classifyShapeFromPointCloud(cluster);
-          if (shape == "none") continue;
-          // Estimate size and centroid.
-          auto sizePair = estimateSize(cluster);
-          int estimatedSize = sizePair.first;
-          if (estimatedSize == -1) continue; // Skip if size is unknown.
+       bool isNew = false;
+       if (shape == "nought") {  // replaced "square" with "nought"
+           isNew = isNewCentroid(worldCentroid, worldCentroidsNought);
+           if (isNew)
+               worldCentroidsNought.push_back(worldCentroid);
+       } else if (shape == "cross") {
+           isNew = isNewCentroid(worldCentroid, worldCentroidsCross);
+           if (isNew)
+               worldCentroidsCross.push_back(worldCentroid);
+       }
 
-         std::vector<float> centroid = sizePair.second;
-         std::vector<float> transformedCentroid = transformPointCameraToBase(centroid, tf_buffer);
+       if (isNew) {
+           count[shape]++;
+           shapePointClouds.push_back(cloud);
+       }
 
-          geometry_msgs::Point worldCentroid;
-          worldCentroid.x = transformedCentroid[0];
-          worldCentroid.y = transformedCentroid[1];
-          worldCentroid.z = transformedCentroid[2];
+       // Save detailed detection info.
+       char info[200];
+       snprintf(info, sizeof(info), "Detected shape: %s (size: %d) at (%.2f, %.2f)",
+                shape.c_str(), estimatedSize, worldCentroid.x, worldCentroid.y);
+       detection_info.push_back(std::string(info));
+       // Print the detection info.
+       ROS_INFO("%s", info);
+   } // end of clusters loop
 
-         bool isNew = false;
-         if (shape == "nought") {  // replaced "square" with "nought"
-             isNew = isNewCentroid(worldCentroid, worldCentroidsNought);
-             if (isNew)
-                 worldCentroidsNought.push_back(worldCentroid);
-         } else if (shape == "cross") {
-             isNew = isNewCentroid(worldCentroid, worldCentroidsCross);
-             if (isNew)
-                 worldCentroidsCross.push_back(worldCentroid);
-         }
+} // end of robot.moveArm
+} // end of scan_poses loop
 
-         if (isNew) {
-             count[shape]++;
-             shapePointClouds.push_back(cloud);
-         }
-
-         ROS_INFO("Detected shape: %s (size: %d) at (%.2f, %.2f)",
-                  shape.c_str(), estimatedSize, worldCentroid.x, worldCentroid.y);
-     }
- }
+ROS_INFO("Final Detections:");
+for (const auto &info : detection_info) {
+    ROS_INFO("%s", info.c_str());
 }
-
-
 ROS_INFO("Final Counts - Noughts: %d, Crosses: %d", count["nought"], count["cross"]);
-return true;
+
+float total_shapes = count["nought"] + count["cross"];
+float score = 0.0f;
+if (count["nought"] > count["cross"]){
+  score = count["nought"];
+}
+else if (count["cross"] > count["nought"]){
+  score = count["cross"];
+}
+else if (count["cross"] == count["nought"]){
+  score = count["cross"];
+}
+else{
+  score = 0;
 }
 
-
+return true;
+} // end solve
 
 } // namespace task3
